@@ -3,58 +3,89 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diário de Trade</title>
-    <link rel="stylesheet" href="style.css">
+    <title>AetherTrade - Trading Journal Pro</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
 </head>
 <body>
 
-    <header>
-        <h1>Meu Diário de Trade</h1>
-        <div class="banca-resumo">
-            <p>Banca Atual: <strong id="valor-banca">R$ 0,00</strong></p>
-        </div>
-    </header>
-
-    <main>
-        <!-- Painel de Registro de Nova Operação -->
-        <section class="registro-form">
-            <h2>Registrar Nova Entrada</h2>
-            
-            <form id="form-trade">
-                <label for="ativo">Ativo (Par de Moedas):</label>
-                <input type="text" id="ativo" placeholder="Ex: EUR/USD" required>
-
-                <label for="direcao">Direção:</label>
-                <select id="direcao" required>
-                    <option value="call">Call (Acima)</option>
-                    <option value="put">Put (Abaixo)</option>
-                </select>
-
-                <label for="valor">Valor da Entrada (R$):</label>
-                <input type="number" id="valor" step="0.01" placeholder="Ex: 50.00" required>
-
-                <label for="resultado">Resultado:</label>
-                <select id="resultado" required>
-                    <option value="win">Win (Vitória)</option>
-                    <option value="loss">Loss (Derrota)</option>
-                    <option value="empate">Empate</option>
-                </select>
-
-                <label for="imagem">Print da Operação:</label>
-                <input type="file" id="imagem" accept="image/*">
-
-                <button type="submit">Salvar Operação</button>
-            </form>
-        </section>
-
-        <!-- Aqui entrarão os gráficos no futuro -->
-        <section class="dashboard">
-            <h2>Evolução do Capital</h2>
-            <div id="grafico-container">
-                <p>O gráfico aparecerá aqui...</p>
+    <div class="dashboard-container">
+        
+        <header class="main-header">
+            <div class="logo-area">
+                <span class="icon">📈</span>
+                <span class="brand-name">AetherTrade</span>
+                <span class="month-selector">Jan <span class="arrow-down">▼</span></span>
             </div>
+            <div class="summary-area">
+                <div class="summary-item">
+                    <span class="label">Current Capital</span>
+                    <span class="value">$1631.00</span>
+                </div>
+                <div class="summary-item">
+                    <span class="label">Monthly Result</span>
+                    <span class="value result-win">+$631.00</span>
+                </div>
+                <div class="summary-item">
+                    <span class="label">ROI</span>
+                    <span class="value result-win">+63.10%</span>
+                </div>
+                <button class="btn-new-entry">➕ NOVA ENTRADA</button>
+            </div>
+        </header>
+
+        <section class="performance-title">
+            <p class="journal-tag">TRADING JOURNAL</p>
+            <h1>January · Performance</h1>
+            <p class="journal-sub">Binary options capital management overview</p>
         </section>
-    </main>
+
+        <section class="kpi-grid">
+            
+            <div class="kpi-card">
+                <div class="kpi-icon-row">
+                    <span class="kpi-label">INITIAL CAPITAL</span>
+                    <span class="kpi-icon">💼</span>
+                </div>
+                <p class="kpi-value">$1000.00</p>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-icon-row">
+                    <span class="kpi-label">CURRENT CAPITAL</span>
+                    <span class="kpi-icon">🔗</span>
+                </div>
+                <p class="kpi-value">$1631.00</p>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-icon-row">
+                    <span class="kpi-label">TOTAL PROFIT</span>
+                    <span class="kpi-icon kpi-icon-win">📈</span>
+                </div>
+                <p class="kpi-value value-win">+$631.00</p>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-icon-row">
+                    <span class="kpi-label">WIN RATE</span>
+                    <span class="kpi-icon">🎯</span>
+                </div>
+                <p class="kpi-value">58.6%</p>
+            </div>
+
+            <div class="kpi-card">
+                <div class="kpi-icon-row">
+                    <span class="kpi-label">TOTAL ENTRIES</span>
+                    <span class="kpi-icon">📝</span>
+                </div>
+                <p class="kpi-value">145</p>
+                <p class="kpi-subvalue">85 wins · 60 losses</p>
+            </div>
+
+        </section>
+
+        </div>
 
     <script src="app.js"></script>
 </body>
