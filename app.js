@@ -9,17 +9,26 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Função que age como "Vigia de Porta"
 async function verificarAcesso() {
-    const { data: { session } } = await supabase.auth.getSession();
+    try {
+        // Tenta pegar a sessão
+        const { data: { session }, error } = await supabase.auth.getSession();
 
-    if (!session) {
-        // Sem crachá: expulsa na mesma hora (a tela ainda está invisível)
-        window.location.href = 'login.html';
-    } else {
-        // Com crachá: mostra o e-mail no console e ACENDE A LUZ!
+        // Se o Supabase retornar um erro ou se não houver sessão...
+        if (error || !session) {
+            window.location.href = 'login.html';
+            return; // Faz o código parar aqui
+        }
+
+        // Se chegou aqui, está tudo certo!
         console.log('Usuário autorizado:', session.user.email);
         
-        // Remove o "display: none" do body e deixa a tela visível
-        document.body.style.display = 'block'; 
+        // Acende a luz usando 'flex' para manter nosso CSS funcionando
+        document.body.style.display = 'flex'; 
+
+    } catch (erroInesperado) {
+        // Se a internet cair ou o código quebrar, não deixa a tela branca
+        console.error('Erro ao verificar acesso:', erroInesperado);
+        window.location.href = 'login.html';
     }
 }
 
