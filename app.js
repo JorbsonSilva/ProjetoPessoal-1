@@ -33,3 +33,25 @@ async function verificarAcesso() {
 }
 
 verificarAcesso();
+
+// --- LÓGICA DO MODAL ---
+const modal = document.getElementById('modal-entrada');
+const btnAbrirModal = document.getElementById('btn-abrir-modal');
+const btnFecharModal = document.getElementById('btn-fechar-modal');
+
+// Abre o Modal ao clicar em "Nova Entrada"
+btnAbrirModal.addEventListener('click', () => {
+    modal.style.display = 'flex';
+});
+
+// Fecha o Modal ao clicar no "X"
+btnFecharModal.addEventListener('click', () => {
+    modal.style.display = 'none';
+});
+
+// Fecha o Modal se clicar fora da caixa (no fundo escuro)
+window.addEventListener('click', (evento) => {
+    if (evento.target === modal) {
+        modal.style.display = 'none';
+    }
+});

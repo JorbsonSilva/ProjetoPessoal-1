@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AetherTrade - Trading Journal Pro</title>
+    <title>SilentTrade - Trading Journal Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./style.css">
 </head>
@@ -14,37 +14,37 @@
         <header class="main-header">
             <div class="logo-area">
                 <span class="icon">📈</span>
-                <span class="brand-name">AetherTrade</span>
+                <span class="brand-name">SilentTrade</span>
                 <span class="month-selector">Jan <span class="arrow-down">▼</span></span>
             </div>
             <div class="summary-area">
                 <div class="summary-item">
-                    <span class="label">Current Capital</span>
+                    <span class="label">Capital Atual</span>
                     <span class="value">$1631.00</span>
                 </div>
                 <div class="summary-item">
-                    <span class="label">Monthly Result</span>
+                    <span class="label">Resultado Mensal</span>
                     <span class="value result-win">+$631.00</span>
                 </div>
                 <div class="summary-item">
                     <span class="label">ROI</span>
                     <span class="value result-win">+63.10%</span>
                 </div>
-                <button class="btn-new-entry">➕ NOVA ENTRADA</button>
+                <button id="btn-abrir-modal" class="btn-new-entry">➕ NOVA ENTRADA</button>
             </div>
         </header>
 
         <section class="performance-title">
             <p class="journal-tag">TRADING JOURNAL</p>
-            <h1>January · Performance</h1>
-            <p class="journal-sub">Binary options capital management overview</p>
+            <h1>Janeiro · Desempenho</h1>
+            <p class="journal-sub">Gestão de Capital em Opções Binárias</p>
         </section>
 
         <section class="kpi-grid">
             
             <div class="kpi-card">
                 <div class="kpi-icon-row">
-                    <span class="kpi-label">INITIAL CAPITAL</span>
+                    <span class="kpi-label">CAPITAL INICIAL</span>
                     <span class="kpi-icon">💼</span>
                 </div>
                 <p class="kpi-value">$1000.00</p>
@@ -52,7 +52,7 @@
 
             <div class="kpi-card">
                 <div class="kpi-icon-row">
-                    <span class="kpi-label">CURRENT CAPITAL</span>
+                    <span class="kpi-label">CAPITAL ATUAL</span>
                     <span class="kpi-icon">🔗</span>
                 </div>
                 <p class="kpi-value">$1631.00</p>
@@ -60,7 +60,7 @@
 
             <div class="kpi-card">
                 <div class="kpi-icon-row">
-                    <span class="kpi-label">TOTAL PROFIT</span>
+                    <span class="kpi-label">LUCRO TOTAL</span>
                     <span class="kpi-icon kpi-icon-win">📈</span>
                 </div>
                 <p class="kpi-value value-win">+$631.00</p>
@@ -76,7 +76,7 @@
 
             <div class="kpi-card">
                 <div class="kpi-icon-row">
-                    <span class="kpi-label">TOTAL ENTRIES</span>
+                    <span class="kpi-label">TOTAL DE ENTRADAS</span>
                     <span class="kpi-icon">📝</span>
                 </div>
                 <p class="kpi-value">145</p>
@@ -86,6 +86,67 @@
         </section>
 
         </div>
+    
+        <!-- MODAL DE NOVA ENTRADA -->
+    <div id="modal-entrada" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Registrar Operação</h2>
+                <button id="btn-fechar-modal" class="btn-close">&times;</button>
+            </div>
+            
+            <form id="form-nova-entrada">
+                <div class="form-row">
+                    <div class="input-group">
+                        <label for="valor">Valor ($)</label>
+                        <input type="number" id="valor" step="0.01" placeholder="Ex: 50.00" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="payout">Payout (%)</label>
+                        <input type="number" id="payout" min="1" max="100" placeholder="Ex: 85" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="resultado">Resultado</label>
+                        <select id="resultado" required>
+                            <option value="Win">Win 🟢</option>
+                            <option value="Loss">Loss 🔴</option>
+                            <option value="Empate">Empate ⚪</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="input-group">
+                        <label for="tempo_grafico">Tempo Gráfico</label>
+                        <select id="tempo_grafico" required>
+                            <option value="1m">1 Minuto (M1)</option>
+                            <option value="5m">5 Minutos (M5)</option>
+                            <option value="15m">15 Minutos (M15)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="tipo_vela">Expiração</label>
+                        <select id="tipo_vela" required>
+                            <option value="Mesma vela">Mesma vela</option>
+                            <option value="Próxima vela">Próxima vela</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="data_operacao">Data e Hora da Entrada</label>
+                    <input type="datetime-local" id="data_operacao" required>
+                </div>
+
+                <div class="input-group">
+                    <label for="motivo_entrada">Motivo / Estratégia</label>
+                    <input type="text" id="motivo_entrada" placeholder="Ex: Pullback na EMA 20" required>
+                </div>
+
+                <button type="submit" class="btn-salvar">Salvar no Diário</button>
+            </form>
+        </div>
+    </div>
 
     <script type="module" src="./app.js"></script>
 </body>
