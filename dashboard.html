@@ -98,6 +98,20 @@
             <form id="form-nova-entrada">
                 <div class="form-row">
                     <div class="input-group">
+                        <label for="ativo">Ativo</label>
+                        <input type="text" id="ativo" placeholder="Ex: EUR/USD" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="direcao">Direção</label>
+                        <select id="direcao" required>
+                            <option value="Call">Call (Compra) 🟢</option>
+                            <option value="Put">Put (Venda) 🔴</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="input-group">
                         <label for="valor">Valor ($)</label>
                         <input type="number" id="valor" step="0.01" placeholder="Ex: 50.00" required>
                     </div>

@@ -39,15 +39,21 @@ const modal = document.getElementById('modal-entrada');
 const btnAbrirModal = document.getElementById('btn-abrir-modal');
 const btnFecharModal = document.getElementById('btn-fechar-modal');
 
-// Abre o Modal ao clicar em "Nova Entrada"
-btnAbrirModal.addEventListener('click', () => {
-    modal.style.display = 'flex';
-});
+// O "if" garante que ele só adicione a função se os elementos existirem na tela
+if (btnAbrirModal && modal) {
+    btnAbrirModal.addEventListener('click', () => {
+        console.log('Botão Nova Entrada clicado!'); // Espião para o F12
+        modal.style.display = 'flex';
+    });
+} else {
+    console.error('Erro: Botão ou Modal não encontrados no HTML!');
+}
 
-// Fecha o Modal ao clicar no "X"
-btnFecharModal.addEventListener('click', () => {
-    modal.style.display = 'none';
-});
+if (btnFecharModal && modal) {
+    btnFecharModal.addEventListener('click', () => {
+        modal.style.display = 'none';
+    });
+}
 
 // Fecha o Modal se clicar fora da caixa (no fundo escuro)
 window.addEventListener('click', (evento) => {
