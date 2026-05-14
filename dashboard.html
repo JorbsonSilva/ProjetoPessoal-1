@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SilentTrade - Trading Journal Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./style.css?v=6">
+    <link rel="stylesheet" href="./style.css?v=7">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body style="display: none;">
@@ -102,6 +102,117 @@
             <div class="chart-container">
                 <canvas id="graficoEvolucao"></canvas>
             </div>
+        </section>
+
+        <section class="bottom-panels">
+            
+            <div class="panel-results">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <h2>Resultados do Mês</h2>
+                        <p>Clique em uma linha para ver as operações</p>
+                    </div>
+                    <div class="panel-actions">
+                        <input type="text" placeholder="🔍 Buscar dia..." class="search-input">
+                        <button class="btn-export">📥 CSV</button>
+                    </div>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="trading-table">
+                        <thead>
+                            <tr>
+                                <th>Dia ⬆️</th>
+                                <th>Entradas</th>
+                                <th>W / L</th>
+                                <th>Resultado</th>
+                                <th>% Diária</th>
+                                <th>Capital</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-resultados-corpo">
+                            </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="right-analysis-column">
+                
+                <div class="panel-projection">
+                    <h2>Projeção de Meta</h2>
+                    <div class="projection-settings">
+                        <label>Meta Mensal Desejada (%):</label>
+                        <div class="input-with-icon">
+                            <input type="number" id="meta-mensal" value="20">
+                            <span>%</span>
+                        </div>
+                    </div>
+
+                    <div class="projection-stats">
+                        <div class="proj-stat-box">
+                            <span class="proj-label">Meta ($)</span>
+                            <strong class="proj-value" id="visor-meta-valor">$0.00</strong>
+                        </div>
+                        <div class="proj-stat-box highlight-box">
+                            <span class="proj-label">Falta para Meta</span>
+                            <strong class="proj-value" id="visor-meta-restante">$0.00</strong>
+                        </div>
+                        <div class="proj-stat-box" style="border-color: var(--neon-green);">
+                            <span class="proj-label">Cliques p/ Meta</span>
+                            <strong class="proj-value" id="visor-entradas-estimadas" style="color: var(--neon-green);">0</strong>
+                        </div>
+                    </div>
+
+                    <div class="progress-section">
+                        <div class="progress-labels">
+                            <span>Progresso</span>
+                            <span id="visor-progresso-percent">0%</span>
+                        </div>
+                        <div class="progress-bar-bg">
+                            <div class="progress-bar-fill" id="barra-progresso"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="advanced-stats-panel">
+                    <h2 style="font-size: 1.1rem; margin-bottom: 15px;">Estatísticas Avançadas</h2>
+                    <div class="advanced-stats-grid">
+                        
+                        <div class="adv-stat-card">
+                            <span class="adv-label">MÉDIA LUCRO</span>
+                            <div class="adv-value text-win" id="adv-media-diaria">+$0.00</div>
+                        </div>
+
+                        <div class="adv-stat-card">
+                            <span class="adv-label">PAYOUT MÉDIO</span>
+                            <div class="adv-value" id="adv-payout-medio">0%</div>
+                        </div>
+
+                        <div class="adv-stat-card">
+                            <span class="adv-label">W/ STREAK</span>
+                            <div class="adv-value text-win" id="adv-win-streak">0</div>
+                        </div>
+
+                        <div class="adv-stat-card">
+                            <span class="adv-label">L/ STREAK</span>
+                            <div class="adv-value text-loss" id="adv-loss-streak">0</div>
+                        </div>
+
+                        <div class="adv-stat-card">
+                            <span class="adv-label">MELHOR HORA</span>
+                            <div class="adv-value" id="adv-melhor-horario">--:--</div>
+                        </div>
+
+                        <div class="adv-stat-card">
+                            <span class="adv-label">MELHOR ATIVO</span>
+                            <div class="adv-value" id="adv-melhor-ativo">---</div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div> 
         </section>
 
         </div>
