@@ -172,3 +172,122 @@ if (formTransacao) {
         }
     });
 }
+
+// --- FUNÇÃO PARA CARREGAR E CALCULAR TUDO ---
+async function carregarResumo() {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const userId = session.user.id;
+        const agora = new Date();
+        const mesAtual = agora.getMonth();
+        const anoAtual = agora.getFullYear();
+
+        // 1. Busca Operações e Transações
+        const [ops, trans] = await Promise.all([
+            supabase.from('operacoes').select('*').eq('user_id', userId),
+            supabase.from('transacoes').select('*').eq('user_id', userId)
+        ]);
+
+        const operacoes = ops.data || [];
+        const transacoes = trans.data || [];
+
+        // --- CÁLCULOS MATEMÁTICOS ---
+        
+        // Lucro de todas as operações (Win - Loss)
+        let lucroTotalTrades = 0;
+        let lucroMesTrades = 0;
+        let wins = 0, losses = 0;
+
+        operacoes.forEach(op => {
+            const valorGanho = op.resultado === 'Win' ? (op.valor * (op.payout / 100)) : (op.resultado === 'Loss' ? -op.valor : 0);
+            lucroTotalTrades += valorGanho;
+
+            const dataOp = new Date(op.data_operacao);
+            if(dataOp.getMonth() === mesAtual && dataOp.getFullYear() === anoAtual) {
+                lucroMesTrades += valorGanho;
+                if(op.resultado === 'Win') wins++;
+                if(op.resultado === 'Loss') losses++;
+            }
+        });
+
+        // Transações da Banca Global
+        let capitalEntrada = 0; // Capital Inicial + Aportes
+        let saquesPermanentes = 0;
+        let saquesMes = 0;
+
+        transacoes.forEach(t => {
+            const val = parseFloat(t.valor);
+            const dataT = new Date(t.data_transacao);
+
+            if(t.tipo === 'Capital Inicial' || t.tipo === 'Aporte') capitalEntrada += val;
+            if(t.tipo === 'Saque Permanente') saquesPermanentes += val;
+
+            // Para o DARF (Saques do mês atual)
+            if(dataT.getMonth() === mesAtual && dataT.getFullYear() === anoAtual) {
+                if(t.tipo === 'Saque Reserva' || t.tipo === 'Saque Permanente') saquesMes += val;
+            }
+        });
+
+        // --- CÁLCULOS FINAIS ---
+        const capitalTotal = capitalEntrada + lucroTotalTrades - saquesPermanentes;
+        const winRate = (wins + losses) > 0 ? ((wins / (wins + losses)) * 100).toFixed(1) : 0;
+        
+        // DARF: 15% sobre o que foi sacado, limitado ao lucro do mês
+        const lucroParaImposto = Math.min(lucroMesTrades, saquesMes);
+        const impostoDarf = lucroParaImposto > 0 ? (lucroParaImposto * 0.15) : 0;
+
+        // --- ATUALIZAR INTERFACE ---
+        document.getElementById('visor-capital-total').textContent = `$${capitalTotal.toFixed(2)}`;
+        document.getElementById('visor-lucro-mes').textContent = `${lucroMesTrades >= 0 ? '+' : ''}$${lucroMesTrades.toFixed(2)}`;
+        document.getElementById('visor-lucro-total').textContent = `${lucroTotalTrades >= 0 ? '+' : ''}$${lucroTotalTrades.toFixed(2)}`;
+        document.getElementById('visor-winrate').textContent = `${winRate}%`;
+        document.getElementById('visor-entradas').textContent = wins + losses;
+        document.getElementById('visor-wins-losses').textContent = `${wins}W · ${losses}L`;
+        document.getElementById('visor-imposto').textContent = `$${impostoDarf.toFixed(2)}`;
+
+        // Renderizar o Gráfico
+        renderizarGrafico(operacoes);
+
+    } catch (error) {
+        console.error("Erro ao carregar resumo:", error);
+    }
+}
+
+function renderizarGrafico(operacoes) {
+    const ctx = document.getElementById('graficoEvolucao').getContext('2d');
+    
+    // Lógica simples de lucro acumulado por tempo para o gráfico
+    let acumulado = 0;
+    const dados = operacoes.sort((a,b) => new Date(a.data_operacao) - new Date(b.data_operacao)).map(op => {
+        const valor = op.resultado === 'Win' ? (op.valor * (op.payout / 100)) : (op.resultado === 'Loss' ? -op.valor : 0);
+        acumulado += valor;
+        return acumulado;
+    });
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: operacoes.map((_, i) => i + 1),
+            datasets: [{
+                label: 'Evolução de Lucro ($)',
+                data: dados,
+                borderColor: '#00ffa3',
+                backgroundColor: 'rgba(0, 255, 163, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: { grid: { color: '#333' }, ticks: { color: '#888' } },
+                x: { grid: { display: false }, ticks: { color: '#888' } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+}
+
+// Chamar a função ao carregar a página
+carregarResumo();
