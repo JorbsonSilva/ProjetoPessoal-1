@@ -245,6 +245,151 @@ async function carregarResumo() {
         document.getElementById('visor-wins-losses').textContent = `${wins}W · ${losses}L`;
         document.getElementById('visor-imposto').textContent = `$${impostoDarf.toFixed(2)}`;
 
+        // ==========================================
+        //  PREENCHER TABELA E ESTATÍSTICAS AVANÇADAS
+        // ==========================================
+        
+        // Filtrar apenas operações do mês atual
+        const opsMesAtual = operacoes.filter(op => {
+            const d = new Date(op.data_operacao);
+            return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
+        });
+
+        // Agrupar dados por dia
+        const statsPorDia = {};
+        let totalPayout = 0;
+        let countPayout = 0;
+        const statsAtivos = {};
+        const statsHorarios = {};
+
+        opsMesAtual.forEach(op => {
+            const d = new Date(op.data_operacao);
+            const dia = d.getDate();
+            const hora = d.getHours() + ':00';
+            
+            // Criar o dia se não existir
+            if(!statsPorDia[dia]) {
+                statsPorDia[dia] = { entradas: 0, wins: 0, losses: 0, resultado: 0 };
+            }
+            
+            statsPorDia[dia].entradas++;
+            if(op.payout) { totalPayout += op.payout; countPayout++; }
+
+            const ganho = op.resultado === 'Win' ? (op.valor * (op.payout / 100)) : (op.resultado === 'Loss' ? -op.valor : 0);
+            
+            if(op.resultado === 'Win') statsPorDia[dia].wins++;
+            if(op.resultado === 'Loss') statsPorDia[dia].losses++;
+            statsPorDia[dia].resultado += ganho;
+
+            // Stats para Melhor Ativo
+            if(!statsAtivos[op.ativo]) statsAtivos[op.ativo] = 0;
+            statsAtivos[op.ativo] += ganho;
+
+            // Stats para Melhor Horário
+            if(!statsHorarios[hora]) statsHorarios[hora] = 0;
+            statsHorarios[hora] += ganho;
+        });
+
+        // Limpar a tabela HTML
+        const tbody = document.getElementById('tabela-resultados-corpo');
+        if(tbody) tbody.innerHTML = '';
+
+        let diasOperados = 0;
+        let somaLucroDiario = 0;
+        let currentWinStreak = 0, maxWinStreak = 0;
+        let currentLossStreak = 0, maxLossStreak = 0;
+
+        // Ordenar os dias do menor para o maior (Dia 1, Dia 2...)
+        const diasOrdenados = Object.keys(statsPorDia).map(Number).sort((a,b) => a - b);
+
+        diasOrdenados.forEach(dia => {
+            const st = statsPorDia[dia];
+            diasOperados++;
+            somaLucroDiario += st.resultado;
+
+            // Calcular Streaks (Sequências)
+            if(st.resultado > 0) {
+                currentWinStreak++; currentLossStreak = 0;
+                if(currentWinStreak > maxWinStreak) maxWinStreak = currentWinStreak;
+            } else if (st.resultado < 0) {
+                currentLossStreak++; currentWinStreak = 0;
+                if(currentLossStreak > maxLossStreak) maxLossStreak = currentLossStreak;
+            } else {
+                currentWinStreak = 0; currentLossStreak = 0;
+            }
+
+            // Criar linha da Tabela
+            const pctDiaria = capitalTotal > 0 ? (st.resultado / capitalTotal) * 100 : 0;
+            const resColor = st.resultado >= 0 ? 'text-win' : 'text-loss';
+            const badgeClass = st.resultado >= 0 ? 'badge-positive' : 'badge-negative';
+            const signal = st.resultado >= 0 ? '+' : '';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>Dia ${dia}</td>
+                <td>${st.entradas}</td>
+                <td><span class="text-win">${st.wins}</span> / <span class="text-loss">${st.losses}</span></td>
+                <td class="${resColor}">${signal}$${st.resultado.toFixed(2)}</td>
+                <td class="${resColor}">${signal}${pctDiaria.toFixed(2)}%</td>
+                <td>$${capitalTotal.toFixed(2)}</td>
+                <td><span class="badge ${badgeClass}">${st.resultado >= 0 ? 'Positivo' : 'Negativo'}</span></td>
+            `;
+            if(tbody) tbody.appendChild(tr);
+        });
+
+        // Encontrar Melhor Ativo e Horário
+        let melhorAtivo = '---'; let maxLucroAtivo = -Infinity;
+        for(let a in statsAtivos) { if(statsAtivos[a] > maxLucroAtivo) { maxLucroAtivo = statsAtivos[a]; melhorAtivo = a; } }
+
+        let melhorHorario = '--:--'; let maxLucroHora = -Infinity;
+        for(let h in statsHorarios) { if(statsHorarios[h] > maxLucroHora) { maxLucroHora = statsHorarios[h]; melhorHorario = h; } }
+
+        // ==========================================
+        // . ATUALIZAR ESTATÍSTICAS E PROJEÇÃO NA TELA
+        // ==========================================
+        
+        // Estatísticas Avançadas
+        const mediaDiaria = diasOperados > 0 ? somaLucroDiario / diasOperados : 0;
+        const payoutMedio = countPayout > 0 ? totalPayout / countPayout : 0;
+
+        if(document.getElementById('adv-media-diaria')) {
+            const elMedia = document.getElementById('adv-media-diaria');
+            elMedia.textContent = `${mediaDiaria >= 0 ? '+' : ''}$${mediaDiaria.toFixed(2)}`;
+            elMedia.className = `adv-value ${mediaDiaria >= 0 ? 'text-win' : 'text-loss'}`;
+        }
+        if(document.getElementById('adv-payout-medio')) document.getElementById('adv-payout-medio').textContent = `${payoutMedio.toFixed(1)}%`;
+        if(document.getElementById('adv-win-streak')) document.getElementById('adv-win-streak').textContent = maxWinStreak;
+        if(document.getElementById('adv-loss-streak')) document.getElementById('adv-loss-streak').textContent = maxLossStreak;
+        if(document.getElementById('adv-melhor-horario')) document.getElementById('adv-melhor-horario').textContent = melhorHorario;
+        if(document.getElementById('adv-melhor-ativo')) document.getElementById('adv-melhor-ativo').textContent = melhorAtivo;
+
+        // Projeção de Meta (A mágica quantitativa!)
+        const metaInput = document.getElementById('meta-mensal');
+        const metaPerc = metaInput ? parseFloat(metaInput.value) : 20;
+        
+        const metaEmDinheiro = capitalTotal * (metaPerc / 100);
+        const faltaParaMeta = metaEmDinheiro - lucroMesTrades;
+        
+        // Quantas entradas faltam? (Falta p/ Meta dividido pela Média de Lucro por Entrada)
+        const mediaLucroPorEntrada = opsMesAtual.length > 0 ? lucroMesTrades / opsMesAtual.length : 0;
+        let entradasEstimadas = '---';
+        
+        if(faltaParaMeta <= 0) {
+            entradasEstimadas = 'META BATIDA! 🏆';
+        } else if (mediaLucroPorEntrada > 0) {
+            entradasEstimadas = Math.ceil(faltaParaMeta / mediaLucroPorEntrada) + ' entradas';
+        } else {
+            entradasEstimadas = 'Sem média ⚠️'; // Se estiver negativo no mês, não dá pra estimar
+        }
+
+        const progresso = metaEmDinheiro > 0 ? (lucroMesTrades / metaEmDinheiro) * 100 : 0;
+        const progressoLimitado = Math.max(0, Math.min(100, progresso));
+
+        if(document.getElementById('visor-meta-valor')) document.getElementById('visor-meta-valor').textContent = `$${metaEmDinheiro.toFixed(2)}`;
+        if(document.getElementById('visor-meta-restante')) document.getElementById('visor-meta-restante').textContent = faltaParaMeta > 0 ? `$${faltaParaMeta.toFixed(2)}` : '$0.00';
+        if(document.getElementById('visor-entradas-estimadas')) document.getElementById('visor-entradas-estimadas').textContent = entradasEstimadas;
+        if(document.getElementById('visor-progresso-percent')) document.getElementById('visor-progresso-percent').textContent = `${progressoLimitado.toFixed(1)}%`;
+        if(document.getElementById('barra-progresso')) document.getElementById('barra-progresso').style.width = `${progressoLimitado}%`;
         // Renderizar o Gráfico
         renderizarGrafico(operacoes);
 
@@ -308,3 +453,11 @@ carregarResumo();
         const headerRoi = document.getElementById('visor-header-roi');
         headerRoi.textContent = `${roiTotal >= 0 ? '+' : ''}${roiTotal.toFixed(2)}%`;
         headerRoi.style.color = roiTotal >= 0 ? 'var(--neon-green)' : 'var(--neon-red)';
+
+// Gatilho: Recalcular a Projeção se o usuário mudar a Meta Mensal %
+const inputMeta = document.getElementById('meta-mensal');
+if(inputMeta) {
+    inputMeta.addEventListener('input', () => {
+        carregarResumo(); // Chama a função inteira de novo para refazer a matemática
+    });
+}
