@@ -602,3 +602,23 @@ adv-label {
     margin-top: -5px; /* Puxa o textinho pra mais perto do número gigante */
 }
 
+/* --- SELETOR DE MÊS --- */
+.month-select {
+    background-color: rgba(0, 255, 163, 0.1);
+    color: var(--neon-green);
+    border: 1px solid rgba(0, 255, 163, 0.3);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-weight: 600;
+    outline: none;
+    cursor: pointer;
+    margin-left: 15px;
+}
+.month-select option {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+}
+
+/* Indicadores Side (Buy/Sell) */
+.side-buy { color: var(--neon-green); font-weight: 600; }
+.side-sell { color: var(--neon-red); font-weight: 600; }

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SilentTrade - Trading Journal Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./style.css?v=7">
+    <link rel="stylesheet" href="./style.css?v=8">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body style="display: none;">
@@ -16,7 +16,20 @@
             <div class="logo-area">
                 <span class="icon">📈</span>
                 <span class="brand-name">SilentTrade</span>
-                <span class="month-selector">Jan <span class="arrow-down">▼</span></span>
+                <select id="seletor-mes" class="month-select">
+                    <option value="0">Janeiro</option>
+                    <option value="1">Fevereiro</option>
+                    <option value="2">Março</option>
+                    <option value="3">Abril</option>
+                    <option value="4">Maio</option>
+                    <option value="5">Junho</option>
+                    <option value="6">Julho</option>
+                    <option value="7">Agosto</option>
+                    <option value="8">Setembro</option>
+                    <option value="9">Outubro</option>
+                    <option value="10">Novembro</option>
+                    <option value="11">Dezembro</option>
+                </select>
             </div>
             <div class="summary-area">
                 <div class="summary-item">
@@ -334,7 +347,37 @@
             </form>
         </div>
     </div>
+    <div id="modal-detalhes" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header" style="border-bottom: none; margin-bottom: 10px;">
+                <div>
+                    <h2 id="titulo-detalhes">Operations · Day X</h2>
+                    <p id="subtitulo-detalhes" style="color: var(--text-muted); font-size: 0.85rem;">0 entries · detailed log</p>
+                </div>
+                <button id="btn-fechar-detalhes" class="btn-close">&times;</button>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="trading-table">
+                    <thead>
+                        <tr>
+                            <th>TIME</th>
+                            <th>ASSET</th>
+                            <th>AMOUNT</th>
+                            <th>PAYOUT</th>
+                            <th>SIDE</th>
+                            <th>RESULT</th>
+                            <th>P&L</th>
+                            <th>STRATEGY</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-detalhes-corpo">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-    <script type="module" src="./app.js?v=6"></script>
+    <script type="module" src="./app.js?v=7"></script>
 </body>
 </html>

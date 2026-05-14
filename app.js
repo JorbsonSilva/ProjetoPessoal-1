@@ -174,15 +174,26 @@ if (formTransacao) {
 }
 
 // --- FUNÇÃO PARA CARREGAR E CALCULAR TUDO ---
+// ==========================================
+// VARIÁVEIS GLOBAIS PARA A MATEMÁTICA INSTANTÂNEA
+// ==========================================
+let currentCapitalTotal = 0;
+let currentLucroMes = 0;
+let currentQtdEntradas = 0;
+
+// ==========================================
+// FUNÇÃO PARA CARREGAR TUDO
+// ==========================================
 async function carregarResumo() {
     try {
         const { data: { session } } = await supabase.auth.getSession();
         const userId = session.user.id;
-        const agora = new Date();
-        const mesAtual = agora.getMonth();
-        const anoAtual = agora.getFullYear();
+        
+        // Pega o mês que está selecionado na caixinha do topo
+        const seletorMes = document.getElementById('seletor-mes');
+        const mesAtual = seletorMes ? parseInt(seletorMes.value) : new Date().getMonth();
+        const anoAtual = new Date().getFullYear();
 
-        // 1. Busca Operações e Transações
         const [ops, trans] = await Promise.all([
             supabase.from('operacoes').select('*').eq('user_id', userId),
             supabase.from('transacoes').select('*').eq('user_id', userId)
@@ -191,134 +202,77 @@ async function carregarResumo() {
         const operacoes = ops.data || [];
         const transacoes = trans.data || [];
 
-        // --- CÁLCULOS MATEMÁTICOS ---
-        
-        // Lucro de todas as operações (Win - Loss)
         let lucroTotalTrades = 0;
         let lucroMesTrades = 0;
         let wins = 0, losses = 0;
 
-        operacoes.forEach(op => {
-            const valorGanho = op.resultado === 'Win' ? (op.valor * (op.payout / 100)) : (op.resultado === 'Loss' ? -op.valor : 0);
-            lucroTotalTrades += valorGanho;
-
-            const dataOp = new Date(op.data_operacao);
-            if(dataOp.getMonth() === mesAtual && dataOp.getFullYear() === anoAtual) {
-                lucroMesTrades += valorGanho;
-                if(op.resultado === 'Win') wins++;
-                if(op.resultado === 'Loss') losses++;
-            }
-        });
-
-        // Transações da Banca Global
-        let capitalEntrada = 0; // Capital Inicial + Aportes
-        let saquesPermanentes = 0;
-        let saquesMes = 0;
-
-        transacoes.forEach(t => {
-            const val = parseFloat(t.valor);
-            const dataT = new Date(t.data_transacao);
-
-            if(t.tipo === 'Capital Inicial' || t.tipo === 'Aporte') capitalEntrada += val;
-            if(t.tipo === 'Saque Permanente') saquesPermanentes += val;
-
-            // Para o DARF (Saques do mês atual)
-            if(dataT.getMonth() === mesAtual && dataT.getFullYear() === anoAtual) {
-                if(t.tipo === 'Saque Reserva' || t.tipo === 'Saque Permanente') saquesMes += val;
-            }
-        });
-
-        // --- CÁLCULOS FINAIS ---
-        const capitalTotal = capitalEntrada + lucroTotalTrades - saquesPermanentes;
-        const winRate = (wins + losses) > 0 ? ((wins / (wins + losses)) * 100).toFixed(1) : 0;
-        
-        // DARF: 15% sobre o que foi sacado, limitado ao lucro do mês
-        const lucroParaImposto = Math.min(lucroMesTrades, saquesMes);
-        const impostoDarf = lucroParaImposto > 0 ? (lucroParaImposto * 0.15) : 0;
-
-        // --- ATUALIZAR INTERFACE ---
-        document.getElementById('visor-capital-total').textContent = `$${capitalTotal.toFixed(2)}`;
-        document.getElementById('visor-lucro-mes').textContent = `${lucroMesTrades >= 0 ? '+' : ''}$${lucroMesTrades.toFixed(2)}`;
-        document.getElementById('visor-lucro-total').textContent = `${lucroTotalTrades >= 0 ? '+' : ''}$${lucroTotalTrades.toFixed(2)}`;
-        document.getElementById('visor-winrate').textContent = `${winRate}%`;
-        document.getElementById('visor-entradas').textContent = wins + losses;
-        document.getElementById('visor-wins-losses').textContent = `${wins}W · ${losses}L`;
-        document.getElementById('visor-imposto').textContent = `$${impostoDarf.toFixed(2)}`;
-
-        // ==========================================
-        //  PREENCHER TABELA E ESTATÍSTICAS AVANÇADAS
-        // ==========================================
-        
-        // Filtrar apenas operações do mês atual
+        // Filtra apenas as operações do mês escolhido
         const opsMesAtual = operacoes.filter(op => {
             const d = new Date(op.data_operacao);
             return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
         });
 
-        // Agrupar dados por dia
-        const statsPorDia = {};
-        let totalPayout = 0;
-        let countPayout = 0;
-        const statsAtivos = {};
-        const statsHorarios = {};
-
-        opsMesAtual.forEach(op => {
-            const d = new Date(op.data_operacao);
-            const dia = d.getDate();
-            const hora = d.getHours() + ':00';
-            
-            // Criar o dia se não existir
-            if(!statsPorDia[dia]) {
-                statsPorDia[dia] = { entradas: 0, wins: 0, losses: 0, resultado: 0 };
-            }
-            
-            statsPorDia[dia].entradas++;
-            if(op.payout) { totalPayout += op.payout; countPayout++; }
-
-            const ganho = op.resultado === 'Win' ? (op.valor * (op.payout / 100)) : (op.resultado === 'Loss' ? -op.valor : 0);
-            
-            if(op.resultado === 'Win') statsPorDia[dia].wins++;
-            if(op.resultado === 'Loss') statsPorDia[dia].losses++;
-            statsPorDia[dia].resultado += ganho;
-
-            // Stats para Melhor Ativo
-            if(!statsAtivos[op.ativo]) statsAtivos[op.ativo] = 0;
-            statsAtivos[op.ativo] += ganho;
-
-            // Stats para Melhor Horário
-            if(!statsHorarios[hora]) statsHorarios[hora] = 0;
-            statsHorarios[hora] += ganho;
+        operacoes.forEach(op => {
+            const valorGanho = op.resultado === 'Win' ? (op.valor * (op.payout / 100)) : (op.resultado === 'Loss' ? -op.valor : 0);
+            lucroTotalTrades += valorGanho;
         });
 
-        // Limpar a tabela HTML
+        const statsPorDia = {};
+        opsMesAtual.forEach(op => {
+            const valorGanho = op.resultado === 'Win' ? (op.valor * (op.payout / 100)) : (op.resultado === 'Loss' ? -op.valor : 0);
+            lucroMesTrades += valorGanho;
+            
+            if(op.resultado === 'Win') wins++;
+            if(op.resultado === 'Loss') losses++;
+
+            const dia = new Date(op.data_operacao).getDate();
+            if(!statsPorDia[dia]) statsPorDia[dia] = { entradas: 0, wins: 0, losses: 0, resultado: 0, ops: [] };
+            
+            statsPorDia[dia].entradas++;
+            if(op.resultado === 'Win') statsPorDia[dia].wins++;
+            if(op.resultado === 'Loss') statsPorDia[dia].losses++;
+            statsPorDia[dia].resultado += valorGanho;
+            statsPorDia[dia].ops.push(op); // Salva as operações do dia para o log detalhado
+        });
+
+        let capitalEntrada = 0; 
+        let saquesPermanentes = 0;
+        let saquesMes = 0;
+
+        transacoes.forEach(t => {
+            const val = parseFloat(t.valor);
+            const d = new Date(t.data_transacao);
+            if(t.tipo === 'Capital Inicial' || t.tipo === 'Aporte') capitalEntrada += val;
+            if(t.tipo === 'Saque Permanente') saquesPermanentes += val;
+            if(d.getMonth() === mesAtual && d.getFullYear() === anoAtual) {
+                if(t.tipo === 'Saque Reserva' || t.tipo === 'Saque Permanente') saquesMes += val;
+            }
+        });
+
+        const capitalTotal = capitalEntrada + lucroTotalTrades - saquesPermanentes;
+        
+        // Atualiza as variáveis globais para o cálculo rápido da Meta
+        currentCapitalTotal = capitalTotal;
+        currentLucroMes = lucroMesTrades;
+        currentQtdEntradas = opsMesAtual.length;
+
+        // Atualiza Interface (Cards Básicos e Cabeçalho)
+        document.getElementById('visor-capital-total').textContent = `$${capitalTotal.toFixed(2)}`;
+        document.getElementById('visor-lucro-mes').textContent = `${lucroMesTrades >= 0 ? '+' : ''}$${lucroMesTrades.toFixed(2)}`;
+        document.getElementById('visor-lucro-total').textContent = `${lucroTotalTrades >= 0 ? '+' : ''}$${lucroTotalTrades.toFixed(2)}`;
+        document.getElementById('visor-entradas').textContent = wins + losses;
+        document.getElementById('visor-wins-losses').textContent = `${wins}W · ${losses}L`;
+        
+        const winRate = (wins + losses) > 0 ? ((wins / (wins + losses)) * 100).toFixed(1) : 0;
+        document.getElementById('visor-winrate').textContent = `${winRate}%`;
+
+        // Preenche a Tabela Diária
         const tbody = document.getElementById('tabela-resultados-corpo');
         if(tbody) tbody.innerHTML = '';
 
-        let diasOperados = 0;
-        let somaLucroDiario = 0;
-        let currentWinStreak = 0, maxWinStreak = 0;
-        let currentLossStreak = 0, maxLossStreak = 0;
-
-        // Ordenar os dias do menor para o maior (Dia 1, Dia 2...)
         const diasOrdenados = Object.keys(statsPorDia).map(Number).sort((a,b) => a - b);
-
         diasOrdenados.forEach(dia => {
             const st = statsPorDia[dia];
-            diasOperados++;
-            somaLucroDiario += st.resultado;
-
-            // Calcular Streaks (Sequências)
-            if(st.resultado > 0) {
-                currentWinStreak++; currentLossStreak = 0;
-                if(currentWinStreak > maxWinStreak) maxWinStreak = currentWinStreak;
-            } else if (st.resultado < 0) {
-                currentLossStreak++; currentWinStreak = 0;
-                if(currentLossStreak > maxLossStreak) maxLossStreak = currentLossStreak;
-            } else {
-                currentWinStreak = 0; currentLossStreak = 0;
-            }
-
-            // Criar linha da Tabela
             const pctDiaria = capitalTotal > 0 ? (st.resultado / capitalTotal) * 100 : 0;
             const resColor = st.resultado >= 0 ? 'text-win' : 'text-loss';
             const badgeClass = st.resultado >= 0 ? 'badge-positive' : 'badge-negative';
@@ -334,68 +288,104 @@ async function carregarResumo() {
                 <td>$${capitalTotal.toFixed(2)}</td>
                 <td><span class="badge ${badgeClass}">${st.resultado >= 0 ? 'Positivo' : 'Negativo'}</span></td>
             `;
+            
+            // Evento para abrir a janela de detalhes ao clicar na linha
+            tr.addEventListener('click', () => abrirDetalhesDia(dia, st.ops));
             if(tbody) tbody.appendChild(tr);
         });
 
-        // Encontrar Melhor Ativo e Horário
-        let melhorAtivo = '---'; let maxLucroAtivo = -Infinity;
-        for(let a in statsAtivos) { if(statsAtivos[a] > maxLucroAtivo) { maxLucroAtivo = statsAtivos[a]; melhorAtivo = a; } }
-
-        let melhorHorario = '--:--'; let maxLucroHora = -Infinity;
-        for(let h in statsHorarios) { if(statsHorarios[h] > maxLucroHora) { maxLucroHora = statsHorarios[h]; melhorHorario = h; } }
-
-        // ==========================================
-        // . ATUALIZAR ESTATÍSTICAS E PROJEÇÃO NA TELA
-        // ==========================================
-        
-        // Estatísticas Avançadas
-        const mediaDiaria = diasOperados > 0 ? somaLucroDiario / diasOperados : 0;
-        const payoutMedio = countPayout > 0 ? totalPayout / countPayout : 0;
-
-        if(document.getElementById('adv-media-diaria')) {
-            const elMedia = document.getElementById('adv-media-diaria');
-            elMedia.textContent = `${mediaDiaria >= 0 ? '+' : ''}$${mediaDiaria.toFixed(2)}`;
-            elMedia.className = `adv-value ${mediaDiaria >= 0 ? 'text-win' : 'text-loss'}`;
-        }
-        if(document.getElementById('adv-payout-medio')) document.getElementById('adv-payout-medio').textContent = `${payoutMedio.toFixed(1)}%`;
-        if(document.getElementById('adv-win-streak')) document.getElementById('adv-win-streak').textContent = maxWinStreak;
-        if(document.getElementById('adv-loss-streak')) document.getElementById('adv-loss-streak').textContent = maxLossStreak;
-        if(document.getElementById('adv-melhor-horario')) document.getElementById('adv-melhor-horario').textContent = melhorHorario;
-        if(document.getElementById('adv-melhor-ativo')) document.getElementById('adv-melhor-ativo').textContent = melhorAtivo;
-
-        // Projeção de Meta (A mágica quantitativa!)
-        const metaInput = document.getElementById('meta-mensal');
-        const metaPerc = metaInput ? parseFloat(metaInput.value) : 20;
-        
-        const metaEmDinheiro = capitalTotal * (metaPerc / 100);
-        const faltaParaMeta = metaEmDinheiro - lucroMesTrades;
-        
-        // Quantas entradas faltam? (Falta p/ Meta dividido pela Média de Lucro por Entrada)
-        const mediaLucroPorEntrada = opsMesAtual.length > 0 ? lucroMesTrades / opsMesAtual.length : 0;
-        let entradasEstimadas = '---';
-        
-        if(faltaParaMeta <= 0) {
-            entradasEstimadas = 'META BATIDA! 🏆';
-        } else if (mediaLucroPorEntrada > 0) {
-            entradasEstimadas = Math.ceil(faltaParaMeta / mediaLucroPorEntrada) + ' entradas';
-        } else {
-            entradasEstimadas = 'Sem média ⚠️'; // Se estiver negativo no mês, não dá pra estimar
-        }
-
-        const progresso = metaEmDinheiro > 0 ? (lucroMesTrades / metaEmDinheiro) * 100 : 0;
-        const progressoLimitado = Math.max(0, Math.min(100, progresso));
-
-        if(document.getElementById('visor-meta-valor')) document.getElementById('visor-meta-valor').textContent = `$${metaEmDinheiro.toFixed(2)}`;
-        if(document.getElementById('visor-meta-restante')) document.getElementById('visor-meta-restante').textContent = faltaParaMeta > 0 ? `$${faltaParaMeta.toFixed(2)}` : '$0.00';
-        if(document.getElementById('visor-entradas-estimadas')) document.getElementById('visor-entradas-estimadas').textContent = entradasEstimadas;
-        if(document.getElementById('visor-progresso-percent')) document.getElementById('visor-progresso-percent').textContent = `${progressoLimitado.toFixed(1)}%`;
-        if(document.getElementById('barra-progresso')) document.getElementById('barra-progresso').style.width = `${progressoLimitado}%`;
-        // Renderizar o Gráfico
-        renderizarGrafico(operacoes);
+        // Atualiza a projeção de meta de forma independente
+        atualizarProjecao();
 
     } catch (error) {
         console.error("Erro ao carregar resumo:", error);
     }
+}
+
+// ==========================================
+// MATEMÁTICA INSTANTÂNEA DA PROJEÇÃO
+// ==========================================
+function atualizarProjecao() {
+    const metaInput = document.getElementById('meta-mensal');
+    const metaPerc = metaInput ? parseFloat(metaInput.value) : 20;
+    
+    const metaEmDinheiro = currentCapitalTotal * (metaPerc / 100);
+    const faltaParaMeta = metaEmDinheiro - currentLucroMes;
+    const mediaLucroPorEntrada = currentQtdEntradas > 0 ? currentLucroMes / currentQtdEntradas : 0;
+    
+    let entradasEstimadas = '---';
+    if(faltaParaMeta <= 0) {
+        entradasEstimadas = 'BATIDA! 🏆';
+    } else if (mediaLucroPorEntrada > 0) {
+        entradasEstimadas = Math.ceil(faltaParaMeta / mediaLucroPorEntrada) + ' cliques';
+    } else {
+        entradasEstimadas = 'Sem média ⚠️';
+    }
+
+    const progresso = metaEmDinheiro > 0 ? (currentLucroMes / metaEmDinheiro) * 100 : 0;
+    const progressoLimitado = Math.max(0, Math.min(100, progresso));
+
+    if(document.getElementById('visor-meta-valor')) document.getElementById('visor-meta-valor').textContent = `$${metaEmDinheiro.toFixed(2)}`;
+    if(document.getElementById('visor-meta-restante')) document.getElementById('visor-meta-restante').textContent = faltaParaMeta > 0 ? `$${faltaParaMeta.toFixed(2)}` : '$0.00';
+    if(document.getElementById('visor-entradas-estimadas')) document.getElementById('visor-entradas-estimadas').textContent = entradasEstimadas;
+    if(document.getElementById('visor-progresso-percent')) document.getElementById('visor-progresso-percent').textContent = `${progressoLimitado.toFixed(1)}%`;
+    if(document.getElementById('barra-progresso')) document.getElementById('barra-progresso').style.width = `${progressoLimitado}%`;
+}
+
+// Evento que escuta as teclas na caixinha de Meta e atualiza instantaneamente
+const inputMeta = document.getElementById('meta-mensal');
+if(inputMeta) inputMeta.addEventListener('input', atualizarProjecao);
+
+// Evento para atualizar todo o painel ao trocar de mês
+const seletorMes = document.getElementById('seletor-mes');
+if(seletorMes) seletorMes.addEventListener('change', carregarResumo);
+
+// ==========================================
+// FUNÇÃO PARA A TABELA DETALHADA (MODAL)
+// ==========================================
+function abrirDetalhesDia(dia, operacoesDoDia) {
+    document.getElementById('titulo-detalhes').textContent = `Operations · Day ${dia}`;
+    document.getElementById('subtitulo-detalhes').textContent = `${operacoesDoDia.length} entries · detailed log`;
+
+    const tbody = document.getElementById('tabela-detalhes-corpo');
+    tbody.innerHTML = ''; // Limpa a tabela antes de preencher
+
+    operacoesDoDia.sort((a,b) => new Date(a.data_operacao) - new Date(b.data_operacao)).forEach(op => {
+        const d = new Date(op.data_operacao);
+        const hora = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+        
+        const resultColor = op.resultado === 'Win' ? 'text-win' : (op.resultado === 'Loss' ? 'text-loss' : '');
+        const sideIcon = op.direcao === 'Call' ? '↗ Buy' : '↘ Sell';
+        const sideClass = op.direcao === 'Call' ? 'side-buy' : 'side-sell';
+        
+        const valorGanho = op.resultado === 'Win' ? (op.valor * (op.payout / 100)) : (op.resultado === 'Loss' ? -op.valor : 0);
+        const signal = valorGanho >= 0 ? '+' : '';
+
+        const badgeResultado = `<span class="badge ${op.resultado === 'Win' ? 'badge-positive' : (op.resultado === 'Loss' ? 'badge-negative' : '')}">${op.resultado}</span>`;
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>⏱ ${hora}</td>
+            <td style="font-weight: 600;">${op.ativo}</td>
+            <td>$${op.valor}</td>
+            <td>${op.payout}%</td>
+            <td class="${sideClass}">${sideIcon}</td>
+            <td>${badgeResultado}</td>
+            <td class="${resultColor} font-weight-bold">${signal}$${Math.abs(valorGanho).toFixed(2)}</td>
+            <td style="color: var(--text-muted);">${op.motivo_entrada || '-'}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+
+    document.getElementById('modal-detalhes').style.display = 'flex';
+}
+
+// Fechar modal de detalhes
+const btnFecharDetalhes = document.getElementById('btn-fechar-detalhes');
+if(btnFecharDetalhes) {
+    btnFecharDetalhes.addEventListener('click', () => {
+        document.getElementById('modal-detalhes').style.display = 'none';
+    });
 }
 
 function renderizarGrafico(operacoes) {
@@ -454,10 +444,3 @@ carregarResumo();
         headerRoi.textContent = `${roiTotal >= 0 ? '+' : ''}${roiTotal.toFixed(2)}%`;
         headerRoi.style.color = roiTotal >= 0 ? 'var(--neon-green)' : 'var(--neon-red)';
 
-// Gatilho: Recalcular a Projeção se o usuário mudar a Meta Mensal %
-const inputMeta = document.getElementById('meta-mensal');
-if(inputMeta) {
-    inputMeta.addEventListener('input', () => {
-        carregarResumo(); // Chama a função inteira de novo para refazer a matemática
-    });
-}
