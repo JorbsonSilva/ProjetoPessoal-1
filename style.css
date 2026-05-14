@@ -623,17 +623,3 @@ adv-label {
 .side-buy { color: var(--neon-green); font-weight: 600; }
 .side-sell { color: var(--neon-red); font-weight: 600; }
 
-/* --- PAINEL DE DETALHES FIXO --- */
-.panel-details {
-    background-color: var(--bg-card);
-    border: 1px solid var(--border-color);
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 40px;
-    animation: fadeIn 0.4s ease; /* Dá um efeito suave quando ele aparece */
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(15px); }
-    to { opacity: 1; transform: translateY(0); }
-}

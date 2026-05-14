@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SilentTrade - Trading Journal Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./style.css?v=10">
+    <link rel="stylesheet" href="./style.css?v=11">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body style="display: none;">
@@ -227,33 +227,6 @@
 
             </div> 
         </section>
-        <section class="panel-details" id="painel-detalhes" style="display: none;">
-            <div class="panel-header" style="margin-bottom: 15px;">
-                <div class="panel-title">
-                    <h2 id="titulo-detalhes">Operações · Selecione um dia</h2>
-                    <p id="subtitulo-detalhes">0 entradas · log detalhado</p>
-                </div>
-            </div>
-            
-            <div class="table-responsive">
-                <table class="trading-table">
-                    <thead>
-                        <tr>
-                            <th>HORA</th>
-                            <th>ATIVO</th>
-                            <th>VALOR</th>
-                            <th>PAYOUT</th>
-                            <th>DIREÇÃO</th>
-                            <th>RESULTADO</th>
-                            <th>LUCRO/PERDA</th>
-                            <th>ESTRATÉGIA</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabela-detalhes-corpo">
-                        </tbody>
-                </table>
-            </div>
-        </section>
 
         </div>
          <!-- MODAL DE GESTÃO DE BANCA-->
@@ -374,8 +347,37 @@
             </form>
         </div>
     </div>
+    <div id="modal-detalhes" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header" style="border-bottom: none; margin-bottom: 10px;">
+                <div>
+                    <h2 id="titulo-detalhes">Operations · Day X</h2>
+                    <p id="subtitulo-detalhes" style="color: var(--text-muted); font-size: 0.85rem;">0 entries · detailed log</p>
+                </div>
+                <button id="btn-fechar-detalhes" class="btn-close">&times;</button>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="trading-table">
+                    <thead>
+                        <tr>
+                            <th>TIME</th>
+                            <th>ASSET</th>
+                            <th>AMOUNT</th>
+                            <th>PAYOUT</th>
+                            <th>SIDE</th>
+                            <th>RESULT</th>
+                            <th>P&L</th>
+                            <th>STRATEGY</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-detalhes-corpo">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
 
-
-    <script type="module" src="./app.js?v=10"></script>
+    <script type="module" src="./app.js?v=11"></script>
 </body>
 </html>
