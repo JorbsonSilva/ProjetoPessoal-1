@@ -291,3 +291,20 @@ function renderizarGrafico(operacoes) {
 
 // Chamar a função ao carregar a página
 carregarResumo();
+
+// --- CÁLCULO DO ROI (Retorno sobre Investimento) ---
+        // O quanto você lucrou em relação ao que você tirou do próprio bolso
+        const roiTotal = capitalEntrada > 0 ? ((lucroTotalTrades / capitalEntrada) * 100) : 0;
+
+        // --- ATUALIZAR CABEÇALHO ---
+        document.getElementById('visor-header-capital').textContent = `$${capitalTotal.toFixed(2)}`;
+        
+        // Elemento Resultado Mensal (com cor dinâmica Verde ou Vermelha)
+        const headerResultado = document.getElementById('visor-header-resultado');
+        headerResultado.textContent = `${lucroMesTrades >= 0 ? '+' : ''}$${lucroMesTrades.toFixed(2)}`;
+        headerResultado.style.color = lucroMesTrades >= 0 ? 'var(--neon-green)' : 'var(--neon-red)';
+        
+        // Elemento ROI Total (com cor dinâmica Verde ou Vermelha)
+        const headerRoi = document.getElementById('visor-header-roi');
+        headerRoi.textContent = `${roiTotal >= 0 ? '+' : ''}${roiTotal.toFixed(2)}%`;
+        headerRoi.style.color = roiTotal >= 0 ? 'var(--neon-green)' : 'var(--neon-red)';
