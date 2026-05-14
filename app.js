@@ -72,8 +72,14 @@ if (formNovaEntrada) {
         btnSalvar.disabled = true; // Desativa o botão para não clicar duas vezes
 
         try {
-            // Pega o seu crachá de usuário
-            const { data: { user } } = await supabase.auth.getUser();
+            // Lemos a sessão que já está no navegador (infalível), em vez de pedir pro servidor de novo
+            const { data: { session } } = await supabase.auth.getSession();
+
+            if (!session) {
+                alert('Sua sessão expirou. Por favor, faça login novamente.');
+                window.location.href = 'login.html';
+                return;
+            }
 
             // Pega tudo que você digitou
             const ativo = document.getElementById('ativo').value;
@@ -86,12 +92,12 @@ if (formNovaEntrada) {
             const data_operacao = document.getElementById('data_operacao').value;
             const motivo_entrada = document.getElementById('motivo_entrada').value;
 
-            // Manda para a tabela 'operacoes'
+            // Manda para a tabela 'operacoes' usando o ID da sessão local
             const { error } = await supabase
                 .from('operacoes')
                 .insert([
                     {
-                        user_id: user.id,
+                        user_id: session.user.id, // <--- A MÁGICA MUDOU AQUI!
                         ativo: ativo,
                         direcao: direcao,
                         valor: valor,
@@ -104,20 +110,18 @@ if (formNovaEntrada) {
                     }
                 ]);
 
-            if (error) throw error; // Se der erro, ele pula pro "catch" abaixo
+            if (error) throw error; // Se o banco rejeitar, pula pro catch
 
-            // Se chegou aqui, DEU CERTO!
+            // Sucesso!
             alert('Operação registrada com sucesso no diário!');
             
-            // Limpa os campos e esconde a janela
             formNovaEntrada.reset();
             modal.style.display = 'none';
 
         } catch (erro) {
             console.error('Erro ao salvar no banco:', erro);
-            alert('Falha ao salvar a operação! Aperte F12 para ver o console.');
+            alert('Falha ao salvar a operação! Erro: ' + erro.message);
         } finally {
-            // Devolve o botão ao estado normal
             btnSalvar.textContent = 'SALVAR NO DIÁRIO';
             btnSalvar.disabled = false;
         }
