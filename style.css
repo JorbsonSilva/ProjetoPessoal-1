@@ -229,8 +229,8 @@ body {
 .modal-content {
     background-color: var(--bg-card);
     width: 100%;
-    max-width: 600px;
-    padding: 30px;
+    max-width: 450px; /* <--- Deixou mais estreito (antes era 600px) */
+    padding: 20px 25px; /* <--- Diminuiu o espaço em volta na vertical */
     border-radius: 12px;
     border: 1px solid var(--border-color);
     box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
@@ -241,14 +241,13 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 25px;
+    margin-bottom: 15px; /* <--- Menos espaço embaixo do título */
     border-bottom: 1px solid var(--border-color);
-    padding-bottom: 15px;
+    padding-bottom: 10px;
 }
 
 .modal-header h2 {
-    font-size: 1.5rem;
-    color: var(--text-primary);
+    font-size: 1.3rem; /* Título levemente menor */
 }
 
 .btn-close {
@@ -266,8 +265,8 @@ body {
 
 .form-row {
     display: flex;
-    gap: 15px;
-    margin-bottom: 15px;
+    gap: 12px;
+    margin-bottom: 10px;
 }
 
 .form-row .input-group {
@@ -277,8 +276,8 @@ body {
 .input-group {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    margin-bottom: 15px;
+    gap: 5px;
+    margin-bottom: 10px;
 }
 
 .input-group label {
@@ -291,9 +290,9 @@ body {
     background-color: var(--bg-main);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
-    padding: 12px;
+    padding: 10px; /* <--- Antes era 12px */
     border-radius: 8px;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     outline: none;
     transition: border-color 0.3s;
 }

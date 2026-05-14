@@ -61,3 +61,70 @@ window.addEventListener('click', (evento) => {
         modal.style.display = 'none';
     }
 });
+
+// --- SALVAR NO BANCO DE DADOS ---
+const formNovaEntrada = document.getElementById('form-nova-entrada');
+
+if (formNovaEntrada) {
+    formNovaEntrada.addEventListener('submit', async (evento) => {
+        // Impede a página de recarregar
+        evento.preventDefault();
+
+        // Pega o botão para mudar o texto enquanto carrega
+        const btnSalvar = document.querySelector('.btn-salvar');
+        btnSalvar.textContent = 'Salvando...';
+        btnSalvar.disabled = true;
+
+        try {
+            // 1. Pega quem é o usuário logado no momento
+            const { data: { user } } = await supabase.auth.getUser();
+
+            // 2. Coleta os dados que você digitou no formulário
+            const ativo = document.getElementById('ativo').value;
+            const direcao = document.getElementById('direcao').value;
+            const valor = parseFloat(document.getElementById('valor').value);
+            const payout = parseFloat(document.getElementById('payout').value);
+            const resultado = document.getElementById('resultado').value;
+            const tempo_grafico = document.getElementById('tempo_grafico').value;
+            const tipo_vela = document.getElementById('tipo_vela').value;
+            const data_operacao = document.getElementById('data_operacao').value;
+            const motivo_entrada = document.getElementById('motivo_entrada').value;
+
+            // 3. Envia o pacote todo para a tabela 'operacoes' do Supabase
+            const { error } = await supabase
+                .from('operacoes')
+                .insert([
+                    {
+                        user_id: user.id, // Liga a operação a VOCÊ
+                        ativo: ativo,
+                        direcao: direcao,
+                        valor: valor,
+                        payout: payout,
+                        resultado: resultado,
+                        tempo_grafico: tempo_grafico,
+                        tipo_vela: tipo_vela,
+                        data_operacao: data_operacao,
+                        motivo_entrada: motivo_entrada
+                    }
+                ]);
+
+            // Se o Supabase reclamar de algo, a gente joga pro "catch"
+            if (error) throw error;
+
+            // Se deu tudo certo:
+            alert('Operação registrada com sucesso!');
+            
+            // Limpa o formulário e esconde a janela
+            formNovaEntrada.reset();
+            modal.style.display = 'none';
+
+        } catch (erro) {
+            console.error('Erro ao salvar:', erro);
+            alert('Falha ao salvar a operação: ' + erro.message);
+        } finally {
+            // Volta o botão ao normal
+            btnSalvar.textContent = 'Salvar no Diário';
+            btnSalvar.disabled = false;
+        }
+    });
+}
