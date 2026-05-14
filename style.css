@@ -337,9 +337,9 @@ body {
 
 .btn-secondary {
     background-color: transparent;
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-    padding: 10px 20px;
+    color: #3498db; /* <-- O texto agora fica azul permanente */
+    border: 1px solid #3498db; /* <-- A borda agora fica azul permanente */
+    padding: 12px 20px;
     border-radius: 8px;
     font-size: 0.9rem;
     font-weight: 600;
@@ -349,7 +349,5 @@ body {
 
 /* Quando passa o mouse, ele ganha um contorno e texto azul (remetendo a banco/finanças) */
 .btn-secondary:hover {
-    border-color: #3498db;
-    color: #3498db;
     background-color: rgba(52, 152, 219, 0.1); /* Um fundinho azul quase transparente */
 }
