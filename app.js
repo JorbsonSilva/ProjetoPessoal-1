@@ -127,3 +127,48 @@ if (formNovaEntrada) {
         }
     });
 }
+
+// ==========================================
+//4 . ELEMENTOS DA BANCA
+// ==========================================
+
+const modalBanca = document.getElementById('modal-banca');
+const btnAbrirBanca = document.getElementById('btn-abrir-banca');
+const btnFecharBanca = document.getElementById('btn-fechar-banca');
+const formTransacao = document.getElementById('form-transacao');
+
+// Abrir/Fechar Banca
+if (btnAbrirBanca) btnAbrirBanca.addEventListener('click', () => modalBanca.style.display = 'flex');
+if (btnFecharBanca) btnFecharBanca.addEventListener('click', () => modalBanca.style.display = 'none');
+
+// Salvar Transação
+if (formTransacao) {
+    formTransacao.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const btn = e.target.querySelector('button');
+        btn.textContent = 'PROCESSANDO...';
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            
+            const { error } = await supabase.from('transacoes').insert([{
+                user_id: session.user.id,
+                tipo: document.getElementById('tipo_transacao').value,
+                valor: parseFloat(document.getElementById('valor_transacao').value),
+                metodo: document.getElementById('metodo_transacao').value,
+                data_transacao: document.getElementById('data_transacao').value
+            }]);
+
+            if (error) throw error;
+
+            alert('Movimentação registrada!');
+            formTransacao.reset();
+            modalBanca.style.display = 'none';
+            // Aqui futuramente chamaremos uma função para atualizar o Capital Inicial na tela
+        } catch (err) {
+            alert('Erro: ' + err.message);
+        } finally {
+            btn.textContent = 'REGISTRAR MOVIMENTAÇÃO';
+        }
+    });
+}
