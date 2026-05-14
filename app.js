@@ -377,7 +377,12 @@ function abrirDetalhesDia(dia, operacoesDoDia) {
         tbody.appendChild(tr);
     });
 
-    document.getElementById('modal-detalhes').style.display = 'flex';
+    // Mostra o painel fixo lá embaixo
+    const painel = document.getElementById('painel-detalhes');
+    painel.style.display = 'block';
+    
+    // Rola a tela suavemente para mostrar a tabela
+    painel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
 // Fechar modal de detalhes
