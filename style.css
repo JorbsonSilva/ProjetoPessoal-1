@@ -623,3 +623,19 @@ adv-label {
 .side-buy { color: var(--neon-green); font-weight: 600; }
 .side-sell { color: var(--neon-red); font-weight: 600; }
 
+/* --- BOTÃO DE DELETAR NO MODAL --- */
+.btn-delete {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    padding: 5px;
+}
+
+/* Fica com o seu vermelho neon ao passar o mouse */
+.btn-delete:hover {
+    color: var(--neon-red);
+    transform: scale(1.1);
+}

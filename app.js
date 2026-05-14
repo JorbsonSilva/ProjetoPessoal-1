@@ -355,7 +355,7 @@ function abrirDetalhesDia(dia, operacoesDoDia) {
         const hora = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
         
         const resultColor = op.resultado === 'Win' ? 'text-win' : (op.resultado === 'Loss' ? 'text-loss' : '');
-        const sideIcon = op.direcao === 'Call' ? '↗ Buy' : '↘ Sell';
+        const sideIcon = op.direcao === 'Call' ? '↗ Compra' : '↘ Venda';
         const sideClass = op.direcao === 'Call' ? 'side-buy' : 'side-sell';
         
         const valorGanho = op.resultado === 'Win' ? (op.valor * (op.payout / 100)) : (op.resultado === 'Loss' ? -op.valor : 0);
@@ -373,6 +373,9 @@ function abrirDetalhesDia(dia, operacoesDoDia) {
             <td>${badgeResultado}</td>
             <td class="${resultColor} font-weight-bold">${signal}$${Math.abs(valorGanho).toFixed(2)}</td>
             <td style="color: var(--text-muted);">${op.motivo_entrada || '-'}</td>
+            <td>
+                <button class="btn-delete" onclick="deletarOperacao('${op.id}')" title="Excluir Entrada">🗑️</button>
+            </td>
         `;
         tbody.appendChild(tr);
     });
@@ -444,3 +447,34 @@ carregarResumo();
         headerRoi.textContent = `${roiTotal >= 0 ? '+' : ''}${roiTotal.toFixed(2)}%`;
         headerRoi.style.color = roiTotal >= 0 ? 'var(--neon-green)' : 'var(--neon-red)';
 
+// ==========================================
+// FUNÇÃO PARA EXCLUIR UMA OPERAÇÃO (DELETE)
+// ==========================================
+window.deletarOperacao = async function(id) {
+    // Pede uma confirmação para não apagar sem querer
+    const confirmacao = confirm("Tem certeza que deseja excluir esta operação? Isso recalculará toda a sua banca e metas.");
+    
+    if (confirmacao) {
+        try {
+            // Vai no Supabase e apaga a linha que tem esse ID
+            const { error } = await supabase
+                .from('operacoes')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+
+            alert('Operação excluída com sucesso!');
+            
+            // Fecha o modal de detalhes
+            document.getElementById('modal-detalhes').style.display = 'none';
+            
+            // Recarrega todo o painel para atualizar os lucros, win rate e gráficos!
+            carregarResumo(); 
+
+        } catch (error) {
+            console.error("Erro ao deletar:", error);
+            alert("Erro ao excluir operação: " + error.message);
+        }
+    }
+};
