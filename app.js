@@ -4,49 +4,43 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 // --- SUAS CREDENCIAIS DO SUPABASE ---
 const supabaseUrl = 'https://gzkjdsndtcgwjtjryoam.supabase.co';
 const supabaseKey = 'eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6a2pkc25kdGNnd2p0anJ5b2FtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1OTU1MTEsImV4cCI6MjA5NDE3MTUxMX0';
-
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Função que age como "Vigia de Porta"
+
+// ==========================================
+// 1. O VIGIA (PROTEÇÃO DE ROTA)
+// ==========================================
 async function verificarAcesso() {
     try {
-        // Tenta pegar a sessão
         const { data: { session }, error } = await supabase.auth.getSession();
 
-        // Se o Supabase retornar um erro ou se não houver sessão...
         if (error || !session) {
             window.location.href = 'login.html';
-            return; // Faz o código parar aqui
+            return; 
         }
 
-        // Se chegou aqui, está tudo certo!
-        console.log('Usuário autorizado:', session.user.email);
-        
-        // Acende a luz usando 'flex' para manter nosso CSS funcionando
+        console.log('Usuário logado:', session.user.email);
         document.body.style.display = 'flex'; 
 
     } catch (erroInesperado) {
-        // Se a internet cair ou o código quebrar, não deixa a tela branca
-        console.error('Erro ao verificar acesso:', erroInesperado);
+        console.error('Erro de acesso:', erroInesperado);
         window.location.href = 'login.html';
     }
 }
-
 verificarAcesso();
 
-// --- LÓGICA DO MODAL ---
+
+// ==========================================
+// 2. ABRIR E FECHAR A JANELA MODAL
+// ==========================================
 const modal = document.getElementById('modal-entrada');
 const btnAbrirModal = document.getElementById('btn-abrir-modal');
 const btnFecharModal = document.getElementById('btn-fechar-modal');
 
-// O "if" garante que ele só adicione a função se os elementos existirem na tela
 if (btnAbrirModal && modal) {
     btnAbrirModal.addEventListener('click', () => {
-        console.log('Botão Nova Entrada clicado!'); // Espião para o F12
         modal.style.display = 'flex';
     });
-} else {
-    console.error('Erro: Botão ou Modal não encontrados no HTML!');
 }
 
 if (btnFecharModal && modal) {
@@ -55,31 +49,33 @@ if (btnFecharModal && modal) {
     });
 }
 
-// Fecha o Modal se clicar fora da caixa (no fundo escuro)
+// Fecha clicando no fundo escuro
 window.addEventListener('click', (evento) => {
     if (evento.target === modal) {
         modal.style.display = 'none';
     }
 });
 
-// --- SALVAR NO BANCO DE DADOS ---
+
+// ==========================================
+// 3. SALVAR OPERAÇÃO NO BANCO DE DADOS
+// ==========================================
 const formNovaEntrada = document.getElementById('form-nova-entrada');
 
 if (formNovaEntrada) {
     formNovaEntrada.addEventListener('submit', async (evento) => {
-        // Impede a página de recarregar
-        evento.preventDefault();
+        // ESSA LINHA É A MÁGICA QUE IMPEDE A PÁGINA DE RECARREGAR
+        evento.preventDefault(); 
 
-        // Pega o botão para mudar o texto enquanto carrega
         const btnSalvar = document.querySelector('.btn-salvar');
-        btnSalvar.textContent = 'Salvando...';
-        btnSalvar.disabled = true;
+        btnSalvar.textContent = 'SALVANDO...'; // Muda o texto do botão
+        btnSalvar.disabled = true; // Desativa o botão para não clicar duas vezes
 
         try {
-            // 1. Pega quem é o usuário logado no momento
+            // Pega o seu crachá de usuário
             const { data: { user } } = await supabase.auth.getUser();
 
-            // 2. Coleta os dados que você digitou no formulário
+            // Pega tudo que você digitou
             const ativo = document.getElementById('ativo').value;
             const direcao = document.getElementById('direcao').value;
             const valor = parseFloat(document.getElementById('valor').value);
@@ -90,12 +86,12 @@ if (formNovaEntrada) {
             const data_operacao = document.getElementById('data_operacao').value;
             const motivo_entrada = document.getElementById('motivo_entrada').value;
 
-            // 3. Envia o pacote todo para a tabela 'operacoes' do Supabase
+            // Manda para a tabela 'operacoes'
             const { error } = await supabase
                 .from('operacoes')
                 .insert([
                     {
-                        user_id: user.id, // Liga a operação a VOCÊ
+                        user_id: user.id,
                         ativo: ativo,
                         direcao: direcao,
                         valor: valor,
@@ -108,22 +104,21 @@ if (formNovaEntrada) {
                     }
                 ]);
 
-            // Se o Supabase reclamar de algo, a gente joga pro "catch"
-            if (error) throw error;
+            if (error) throw error; // Se der erro, ele pula pro "catch" abaixo
 
-            // Se deu tudo certo:
-            alert('Operação registrada com sucesso!');
+            // Se chegou aqui, DEU CERTO!
+            alert('Operação registrada com sucesso no diário!');
             
-            // Limpa o formulário e esconde a janela
+            // Limpa os campos e esconde a janela
             formNovaEntrada.reset();
             modal.style.display = 'none';
 
         } catch (erro) {
-            console.error('Erro ao salvar:', erro);
-            alert('Falha ao salvar a operação: ' + erro.message);
+            console.error('Erro ao salvar no banco:', erro);
+            alert('Falha ao salvar a operação! Aperte F12 para ver o console.');
         } finally {
-            // Volta o botão ao normal
-            btnSalvar.textContent = 'Salvar no Diário';
+            // Devolve o botão ao estado normal
+            btnSalvar.textContent = 'SALVAR NO DIÁRIO';
             btnSalvar.disabled = false;
         }
     });

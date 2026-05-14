@@ -287,10 +287,12 @@ body {
 }
 
 .input-group input, .input-group select {
+    width: 100%; /* <-- A mágica que força a caixa a não vazar do quadrado */
+    box-sizing: border-box; /* <-- Garante que o preenchimento não engorde a caixa */
     background-color: var(--bg-main);
     color: var(--text-primary);
     border: 1px solid var(--border-color);
-    padding: 10px; /* <--- Antes era 12px */
+    padding: 10px;
     border-radius: 8px;
     font-size: 0.9rem;
     outline: none;
