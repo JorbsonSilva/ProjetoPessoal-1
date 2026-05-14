@@ -327,3 +327,29 @@ body {
 .btn-salvar:hover {
     background-color: #0cba76;
 }
+
+/* --- BOTÕES DO CABEÇALHO --- */
+.actions-buttons {
+    display: flex;
+    gap: 15px; /* Espaço entre os dois botões */
+    align-items: center;
+}
+
+.btn-secondary {
+    background-color: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+/* Quando passa o mouse, ele ganha um contorno e texto azul (remetendo a banco/finanças) */
+.btn-secondary:hover {
+    border-color: #3498db;
+    color: #3498db;
+    background-color: rgba(52, 152, 219, 0.1); /* Um fundinho azul quase transparente */
+}
