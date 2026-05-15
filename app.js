@@ -36,15 +36,28 @@ const btnFecharBanca = document.getElementById('btn-fechar-banca');
 if (btnAbrirBanca) btnAbrirBanca.addEventListener('click', () => modalBanca.style.display = 'flex');
 if (btnFecharBanca) btnFecharBanca.addEventListener('click', () => modalBanca.style.display = 'none');
 
-// Fechar Modal Detalhes (Estava perdido, agora está no lugar certo)
+// Fechar Modal Detalhes
 const modalDetalhes = document.getElementById('modal-detalhes');
 const btnFecharDetalhes = document.getElementById('btn-fechar-detalhes');
 if (btnFecharDetalhes) btnFecharDetalhes.addEventListener('click', () => modalDetalhes.style.display = 'none');
+
+// Histórico de Banca
+const modalHistoricoBanca = document.getElementById('modal-historico-banca');
+const btnVerHistorico = document.getElementById('btn-ver-historico-banca');
+const btnFecharHistorico = document.getElementById('btn-fechar-historico-banca');
+if (btnVerHistorico) {
+    btnVerHistorico.addEventListener('click', () => {
+        document.getElementById('modal-banca').style.display = 'none';
+        abrirHistoricoBanca();
+    });
+}
+if (btnFecharHistorico) btnFecharHistorico.addEventListener('click', () => modalHistoricoBanca.style.display = 'none');
 
 window.addEventListener('click', (evento) => {
     if (evento.target === modal) modal.style.display = 'none';
     if (evento.target === modalBanca) modalBanca.style.display = 'none';
     if (evento.target === modalDetalhes) modalDetalhes.style.display = 'none';
+    if (evento.target === modalHistoricoBanca) modalHistoricoBanca.style.display = 'none';
 });
 
 
@@ -75,7 +88,7 @@ if (formNovaEntrada) {
             alert('Operação registrada com sucesso!');
             formNovaEntrada.reset();
             modal.style.display = 'none';
-            carregarResumo(); // Atualiza painel instantaneamente
+            carregarResumo(); 
         } catch (erro) {
             alert('Falha ao salvar a operação! Erro: ' + erro.message);
         } finally {
@@ -114,7 +127,7 @@ if (formTransacao) {
 
 
 // ==========================================
-// 3. INTELIGÊNCIA DO PAINEL (CÁLCULOS GERAIS)
+// 3. INTELIGÊNCIA DO PAINEL E CORREÇÃO DE FUSO (UTC)
 // ==========================================
 let currentCapitalTotal = 0;
 let currentLucroMes = 0;
@@ -129,7 +142,6 @@ async function carregarResumo() {
         const mesAtual = seletorMes ? parseInt(seletorMes.value) : new Date().getMonth();
         const anoAtual = new Date().getFullYear();
 
-        // Troca o título grandão com o nome do mês selecionado
         const tituloDisplay = document.getElementById('titulo-mes-display');
         if (tituloDisplay && seletorMes) {
             const nomeMes = seletorMes.options[seletorMes.selectedIndex].text;
@@ -145,9 +157,11 @@ async function carregarResumo() {
         const transacoes = trans.data || [];
 
         let lucroTotalTrades = 0, lucroMesTrades = 0, wins = 0, losses = 0;
+        
         const opsMesAtual = operacoes.filter(op => {
             const d = new Date(op.data_operacao);
-            return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
+            // CORREÇÃO: Usar getUTC para ignorar o fuso horário local
+            return d.getUTCMonth() === mesAtual && d.getUTCFullYear() === anoAtual;
         });
 
         operacoes.forEach(op => {
@@ -163,7 +177,8 @@ async function carregarResumo() {
             if(op.resultado === 'Win') wins++;
             if(op.resultado === 'Loss') losses++;
 
-            const dia = new Date(op.data_operacao).getDate();
+            // CORREÇÃO: Agrupar o dia pelo UTC, não pelo local
+            const dia = new Date(op.data_operacao).getUTCDate();
             if(!statsPorDia[dia]) statsPorDia[dia] = { entradas: 0, wins: 0, losses: 0, resultado: 0, ops: [] };
             
             statsPorDia[dia].entradas++;
@@ -179,14 +194,15 @@ async function carregarResumo() {
             const d = new Date(t.data_transacao);
             if(t.tipo === 'Capital Inicial' || t.tipo === 'Aporte') capitalEntrada += val;
             if(t.tipo === 'Saque Permanente') saquesPermanentes += val;
-            if(d.getMonth() === mesAtual && d.getFullYear() === anoAtual) {
+            
+            // CORREÇÃO: Ler mês de transações em UTC
+            if(d.getUTCMonth() === mesAtual && d.getUTCFullYear() === anoAtual) {
                 if(t.tipo === 'Saque Reserva' || t.tipo === 'Saque Permanente') saquesMes += val;
             }
         });
 
         const capitalTotal = capitalEntrada + lucroTotalTrades - saquesPermanentes;
         
-        // --- O ROI AGORA ESTÁ DENTRO DA CAIXA CERTA! ---
         const roiTotal = capitalEntrada > 0 ? ((lucroTotalTrades / capitalEntrada) * 100) : 0;
         const headerRoi = document.getElementById('visor-header-roi');
         if(headerRoi) {
@@ -198,7 +214,7 @@ async function carregarResumo() {
         currentLucroMes = lucroMesTrades;
         currentQtdEntradas = opsMesAtual.length;
 
-        // Atualiza Cards Principais
+        // Atualiza Cards
         document.getElementById('visor-capital-total').textContent = `$${capitalTotal.toFixed(2)}`;
         document.getElementById('visor-header-capital').textContent = `$${capitalTotal.toFixed(2)}`;
         
@@ -242,8 +258,93 @@ async function carregarResumo() {
             if(tbody) tbody.appendChild(tr);
         });
 
+// ==========================================
+        // --- CÁLCULO DAS ESTATÍSTICAS AVANÇADAS ---
+        // ==========================================
+        let totalPayout = 0;
+        let countPayout = 0;
+        const statsAtivos = {};
+        const statsTurnos = {}; // Novo objeto para turnos
+
+        opsMesAtual.forEach(op => {
+            if(op.payout) { totalPayout += op.payout; countPayout++; }
+            const valorGanho = op.resultado === 'Win' ? (op.valor * (op.payout / 100)) : (op.resultado === 'Loss' ? -op.valor : 0);
+
+            // Calcula o Melhor Ativo
+            if(!statsAtivos[op.ativo]) statsAtivos[op.ativo] = 0;
+            statsAtivos[op.ativo] += valorGanho;
+
+            // Calcula o Melhor Turno (Madrugada, Manhã, Tarde ou Noite)
+            const d = new Date(op.data_operacao);
+            const hora = d.getUTCHours(); // Usando a hora corrigida sem fuso
+            let turno = '';
+            
+            if(hora >= 6 && hora < 12) {
+                turno = 'Manhã';
+            } else if (hora >= 12 && hora < 18) {
+                turno = 'Tarde';
+            } else if (hora >= 18 && hora <= 23) {
+                turno = 'Noite';
+            } else {
+                turno = 'Madrugada';
+            }
+
+            if(!statsTurnos[turno]) statsTurnos[turno] = 0;
+            statsTurnos[turno] += valorGanho;
+        });
+
+        let diasOperados = 0;
+        let somaLucroDiario = 0;
+        let currentWinStreak = 0, maxWinStreak = 0;
+        let currentLossStreak = 0, maxLossStreak = 0;
+
+        // Calcula Streaks (Dias consecutivos de Win ou Loss)
+        diasOrdenados.forEach(dia => {
+            const st = statsPorDia[dia];
+            diasOperados++;
+            somaLucroDiario += st.resultado;
+
+            if(st.resultado > 0) {
+                currentWinStreak++; currentLossStreak = 0;
+                if(currentWinStreak > maxWinStreak) maxWinStreak = currentWinStreak;
+            } else if (st.resultado < 0) {
+                currentLossStreak++; currentWinStreak = 0;
+                if(currentLossStreak > maxLossStreak) maxLossStreak = currentLossStreak;
+            } else {
+                currentWinStreak = 0; currentLossStreak = 0;
+            }
+        });
+
+        // Encontrar o Vencedor dos Ativos e Turnos
+        let melhorAtivo = '---'; let maxLucroAtivo = -Infinity;
+        for(let a in statsAtivos) { if(statsAtivos[a] > maxLucroAtivo) { maxLucroAtivo = statsAtivos[a]; melhorAtivo = a; } }
+        if(maxLucroAtivo === -Infinity || maxLucroAtivo <= 0) melhorAtivo = '---';
+
+        let melhorTurno = '---'; let maxLucroTurno = -Infinity;
+        for(let t in statsTurnos) { if(statsTurnos[t] > maxLucroTurno) { maxLucroTurno = statsTurnos[t]; melhorTurno = t; } }
+        if(maxLucroTurno === -Infinity || maxLucroTurno <= 0) melhorTurno = '---';
+
+        // Médias
+        const mediaDiaria = diasOperados > 0 ? somaLucroDiario / diasOperados : 0;
+        const payoutMedio = countPayout > 0 ? totalPayout / countPayout : 0;
+
+        // --- INJETANDO NA TELA ---
+        if(document.getElementById('adv-media-diaria')) {
+            const elMedia = document.getElementById('adv-media-diaria');
+            elMedia.textContent = `${mediaDiaria >= 0 ? '+' : ''}$${mediaDiaria.toFixed(2)}`;
+            elMedia.className = `adv-value ${mediaDiaria >= 0 ? 'text-win' : 'text-loss'}`;
+        }
+        if(document.getElementById('adv-payout-medio')) document.getElementById('adv-payout-medio').textContent = `${payoutMedio.toFixed(1)}%`;
+        if(document.getElementById('adv-win-streak')) document.getElementById('adv-win-streak').textContent = maxWinStreak;
+        if(document.getElementById('adv-loss-streak')) document.getElementById('adv-loss-streak').textContent = maxLossStreak;
+        
+        // Injeta o novo resultado de Turno
+        if(document.getElementById('adv-melhor-turno')) document.getElementById('adv-melhor-turno').textContent = melhorTurno;
+        if(document.getElementById('adv-melhor-ativo')) document.getElementById('adv-melhor-ativo').textContent = melhorAtivo;
+        // ==========================================
+
         atualizarProjecao();
-        renderizarGrafico(opsMesAtual); // Passa apenas as operações do mês para o gráfico
+        renderizarGrafico(opsMesAtual); 
 
     } catch (error) {
         console.error("Erro ao carregar resumo:", error);
@@ -251,7 +352,7 @@ async function carregarResumo() {
 }
 
 // ==========================================
-// 4. METAS E DETALHES
+// 4. METAS E DETALHES DA TABELA
 // ==========================================
 function atualizarProjecao() {
     const metaInput = document.getElementById('meta-mensal');
@@ -280,14 +381,12 @@ function atualizarProjecao() {
     if(document.getElementById('barra-progresso')) document.getElementById('barra-progresso').style.width = `${progressoLimitado}%`;
 }
 
-// Eventos de Gatilho Rápido
 const inputMeta = document.getElementById('meta-mensal');
 if(inputMeta) inputMeta.addEventListener('input', atualizarProjecao);
 
 const seletorMes = document.getElementById('seletor-mes');
 if(seletorMes) seletorMes.addEventListener('change', carregarResumo);
 
-// Abrir Tabela Detalhada
 function abrirDetalhesDia(dia, operacoesDoDia) {
     document.getElementById('titulo-detalhes').textContent = `Operações · Dia ${dia}`;
     document.getElementById('subtitulo-detalhes').textContent = `${operacoesDoDia.length} entradas · log detalhado`;
@@ -297,7 +396,12 @@ function abrirDetalhesDia(dia, operacoesDoDia) {
 
     operacoesDoDia.sort((a,b) => new Date(a.data_operacao) - new Date(b.data_operacao)).forEach(op => {
         const d = new Date(op.data_operacao);
-        const hora = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+        
+        // CORREÇÃO: Formatando hora e minuto puxando direto de UTC
+        const horaStr = d.getUTCHours().toString().padStart(2, '0');
+        const minStr = d.getUTCMinutes().toString().padStart(2, '0');
+        const hora = `${horaStr}:${minStr}`;
+
         const resultColor = op.resultado === 'Win' ? 'text-win' : (op.resultado === 'Loss' ? 'text-loss' : '');
         const sideIcon = op.direcao === 'Call' ? '↗ Compra' : '↘ Venda';
         const sideClass = op.direcao === 'Call' ? 'side-buy' : 'side-sell';
@@ -306,7 +410,6 @@ function abrirDetalhesDia(dia, operacoesDoDia) {
         const badgeResultado = `<span class="badge ${op.resultado === 'Win' ? 'badge-positive' : (op.resultado === 'Loss' ? 'badge-negative' : '')}">${op.resultado}</span>`;
 
         const tr = document.createElement('tr');
-        // ATENÇÃO: Adicionei o onclick direto aqui chamando o window.deletarOperacao (infalível)
         tr.innerHTML = `
             <td>⏱ ${hora}</td>
             <td style="font-weight: 600;">${op.ativo}</td>
@@ -326,12 +429,9 @@ function abrirDetalhesDia(dia, operacoesDoDia) {
     modalDetalhes.style.display = 'flex';
 }
 
-// Gráfico
 function renderizarGrafico(operacoes) {
     const canvas = document.getElementById('graficoEvolucao');
     if(!canvas) return;
-    
-    // Se já existe um gráfico, destrua-o antes de desenhar o novo (previne bug de sobreposição ao mudar de mês)
     if(window.meuGrafico) window.meuGrafico.destroy();
 
     const ctx = canvas.getContext('2d');
@@ -368,7 +468,7 @@ function renderizarGrafico(operacoes) {
 }
 
 // ==========================================
-// 5. EXCLUIR OPERAÇÃO DO BANCO (GLOBAL)
+// 5. FUNÇÕES DE DELETAR (OPERAÇÃO E BANCA)
 // ==========================================
 window.deletarOperacao = async function(id) {
     const confirmacao = confirm("Tem certeza que deseja excluir esta operação?");
@@ -376,7 +476,6 @@ window.deletarOperacao = async function(id) {
         try {
             const { error } = await supabase.from('operacoes').delete().eq('id', id);
             if (error) throw error;
-            
             alert('Operação excluída com sucesso!');
             document.getElementById('modal-detalhes').style.display = 'none';
             carregarResumo(); 
@@ -386,31 +485,23 @@ window.deletarOperacao = async function(id) {
     }
 };
 
-// Iniciar
-carregarResumo();
+window.deletarTransacao = async function(id) {
+    if (confirm("Deseja excluir este registro de banca? Isso afetará seu Capital Total imediatamente.")) {
+        try {
+            const { error } = await supabase.from('transacoes').delete().eq('id', id);
+            if (error) throw error;
+            alert('Registro removido!');
+            document.getElementById('modal-historico-banca').style.display = 'none';
+            carregarResumo(); 
+        } catch (error) {
+            alert("Erro ao excluir: " + error.message);
+        }
+    }
+};
 
 // ==========================================
-// 6. HISTÓRICO DE MOVIMENTAÇÕES DE BANCA
+// 6. HISTÓRICO COMPLETO DA BANCA (AJUSTE DE FUSO UTC)
 // ==========================================
-
-const modalHistoricoBanca = document.getElementById('modal-historico-banca');
-const btnVerHistorico = document.getElementById('btn-ver-historico-banca');
-const btnFecharHistorico = document.getElementById('btn-fechar-historico-banca');
-
-if (btnVerHistorico) {
-    btnVerHistorico.addEventListener('click', () => {
-        // Fecha o modal de registro para abrir o de histórico
-        document.getElementById('modal-banca').style.display = 'none';
-        abrirHistoricoBanca();
-    });
-}
-
-if (btnFecharHistorico) {
-    btnFecharHistorico.addEventListener('click', () => {
-        modalHistoricoBanca.style.display = 'none';
-    });
-}
-
 async function abrirHistoricoBanca() {
     try {
         const { data: { session } } = await supabase.auth.getSession();
@@ -428,7 +519,14 @@ async function abrirHistoricoBanca() {
 
         transacoes.forEach(t => {
             const d = new Date(t.data_transacao);
-            const dataFormatada = d.toLocaleDateString('pt-BR') + ' ' + d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+            
+            // CORREÇÃO: Forçando formatação da Data/Hora direto no UTC para não perder 3h
+            const diaStr = d.getUTCDate().toString().padStart(2, '0');
+            const mesStr = (d.getUTCMonth() + 1).toString().padStart(2, '0');
+            const anoStr = d.getUTCFullYear();
+            const horaStr = d.getUTCHours().toString().padStart(2, '0');
+            const minStr = d.getUTCMinutes().toString().padStart(2, '0');
+            const dataFormatada = `${diaStr}/${mesStr}/${anoStr} ${horaStr}:${minStr}`;
             
             const colorClass = (t.tipo.includes('Saque')) ? 'text-loss' : 'text-win';
             const sinal = (t.tipo.includes('Saque')) ? '-' : '+';
@@ -446,25 +544,12 @@ async function abrirHistoricoBanca() {
             tbody.appendChild(tr);
         });
 
-        modalHistoricoBanca.style.display = 'flex';
+        document.getElementById('modal-historico-banca').style.display = 'flex';
 
     } catch (error) {
         alert("Erro ao carregar histórico: " + error.message);
     }
 }
 
-// Função para deletar movimentação de banca
-window.deletarTransacao = async function(id) {
-    if (confirm("Deseja excluir este registro de banca? Isso afetará seu Capital Total imediatamente.")) {
-        try {
-            const { error } = await supabase.from('transacoes').delete().eq('id', id);
-            if (error) throw error;
-            
-            alert('Registro removido!');
-            modalHistoricoBanca.style.display = 'none';
-            carregarResumo(); // Recalcula tudo na tela principal
-        } catch (error) {
-            alert("Erro ao excluir: " + error.message);
-        }
-    }
-};
+// Iniciar Sistema
+carregarResumo();

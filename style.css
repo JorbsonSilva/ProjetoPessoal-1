@@ -274,6 +274,12 @@ body {
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
+/* Impede o texto da tabela de resultados de quebrar para a linha de baixo */
+.panel-results th,
+.panel-results td {
+    white-space: nowrap;
+}
+
 .trading-table tbody tr:hover { background-color: rgba(255, 255, 255, 0.02); cursor: pointer; }
 
 /* --- PROJEÇÃO E ESTATÍSTICAS --- */
@@ -291,12 +297,15 @@ body {
 .proj-stat-box {
     display: flex; justify-content: space-between; align-items: center;
     background-color: var(--bg-main); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);
+    flex-wrap: wrap; /* Permite que o número desça para a linha de baixo se não couber */
+    gap: 8px;
 }
 .highlight-box { border-color: #3498db; background-color: rgba(52, 152, 219, 0.05); }
 
 .advanced-stats-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    /* Tira o '2' fixo e deixa ele calcular quantas colunas cabem (geralmente 2 ou 1) */
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); 
     gap: 12px;
 }
 
@@ -500,11 +509,20 @@ body {
 @media (max-width: 1024px) {
     .dashboard-main-content { flex-direction: column; }
     .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-    .bottom-panels { flex-direction: column; }
+    
+    .bottom-panels { 
+        flex-direction: column; 
+        align-items: stretch; /* Garante que os painéis estiquem até o final */
+    }
+    
     .panel-header { flex-direction: column; align-items: flex-start; gap: 15px; }
+    
+    /* Obriga os dois painéis a ocuparem 100% da largura da tela no celular */
+    .right-analysis-column { width: 100%; } 
+    .panel-results { width: 100%; }
 }
 @media (max-width: 768px) {
     .main-header { flex-direction: column; gap: 15px; }
     .summary-area { flex-wrap: wrap; justify-content: center; }
-    .kpi-grid { grid-template-columns: 1fr 1fr; }
+    .kpi-grid { grid-template-columns: 1fr 1fr; } /* Devolvendo os seus cards de cima em dupla! */
 }
