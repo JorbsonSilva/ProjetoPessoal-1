@@ -149,9 +149,97 @@ body {
     background-color: rgba(52, 152, 219, 0.1);
 }
 
-/* --- TÍTULO DA PERFORMANCE --- */
-.performance-title {
+/* --- ENVOLVRO DO TÍTULO E CALCULADORA --- */
+.performance-title-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 35px;
+    flex-wrap: wrap; /* Permite quebrar em telas menores */
+    gap: 20px;
+}
+
+.performance-title {
+    margin-bottom: 0;
+}
+
+/* --- CALCULADORA DE ENTRADA RÁPIDA --- */
+.entry-calculator {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px 20px;
+    display: flex;
+    flex-direction: column;
+    min-width: 320px;
+}
+
+.calc-header {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 10px;
+    letter-spacing: 0.5px;
+}
+
+.calc-body {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.calc-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.calc-item label {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.calc-item input {
+    width: 70px;
+    background-color: var(--bg-main);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 6px;
+    padding: 5px;
+    font-size: 0.9rem;
+    text-align: center;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+.calc-item input:focus {
+    border-color: #3498db;
+}
+
+.calc-result-box {
+    display: flex;
+    flex-direction: column;
+    margin-left: auto;
+    text-align: right;
+    padding-left: 15px;
+    border-left: 1px solid var(--border-color);
+}
+
+.calc-label-res {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.calc-valor {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.calc-lucro {
+    font-size: 0.75rem;
+    color: var(--neon-green);
 }
 
 .journal-tag {
@@ -525,4 +613,7 @@ body {
     .main-header { flex-direction: column; gap: 15px; }
     .summary-area { flex-wrap: wrap; justify-content: center; }
     .kpi-grid { grid-template-columns: 1fr 1fr; } /* Devolvendo os seus cards de cima em dupla! */
+    .performance-title-wrapper { flex-direction: column; align-items: flex-start;}
+    .entry-calculator { width: 100%; }
+
 }

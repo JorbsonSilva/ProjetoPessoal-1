@@ -355,6 +355,7 @@ async function carregarResumo() {
         // ==========================================
 
         atualizarProjecao();
+        atualizarCalculadoraRisco();
         renderizarGrafico(opsMesAtual); 
 
     } catch (error) {
@@ -618,3 +619,25 @@ async function abrirHistoricoBanca() {
 
 // Iniciar Sistema
 carregarResumo();
+
+// ==========================================
+// 7. CALCULADORA DE RISCO (NOVA)
+// ==========================================
+function atualizarCalculadoraRisco() {
+    const percRisco = parseFloat(document.getElementById('calc-risco').value) || 0;
+    const percPayout = parseFloat(document.getElementById('calc-payout').value) || 0;
+    
+    // A mágica: Calcula o valor da entrada sobre o seu Capital Atual!
+    const valorEntrada = currentCapitalTotal * (percRisco / 100);
+    const lucroEstimado = valorEntrada * (percPayout / 100);
+    
+    document.getElementById('calc-valor-entrada').textContent = `$${valorEntrada.toFixed(2)}`;
+    document.getElementById('calc-lucro-estimado').textContent = `Retorno: +$${lucroEstimado.toFixed(2)}`;
+}
+
+// Ouve as digitações nos inputs e calcula em tempo real
+const inputRisco = document.getElementById('calc-risco');
+const inputPayout = document.getElementById('calc-payout');
+
+if(inputRisco) inputRisco.addEventListener('input', atualizarCalculadoraRisco);
+if(inputPayout) inputPayout.addEventListener('input', atualizarCalculadoraRisco);
