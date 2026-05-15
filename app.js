@@ -236,10 +236,21 @@ async function carregarResumo() {
         const tbody = document.getElementById('tabela-resultados-corpo');
         if(tbody) tbody.innerHTML = '';
 
+        // --- NOVA LÓGICA DE CAPITAL ACUMULADO ---
+        // Descobre com quanto você iniciou o mês (Capital Total menos o Lucro do Mês)
+        let capitalCorrente = capitalTotal - lucroMesTrades;
+
         const diasOrdenados = Object.keys(statsPorDia).map(Number).sort((a,b) => a - b);
         diasOrdenados.forEach(dia => {
             const st = statsPorDia[dia];
-            const pctDiaria = capitalTotal > 0 ? (st.resultado / capitalTotal) * 100 : 0;
+            
+            // 1. Soma o lucro/prejuízo do dia ao capital corrente
+            capitalCorrente += st.resultado;
+
+            // 2. Calcula a % Diária com base na banca EXATA do início daquele dia
+            const bancaInicioDoDia = capitalCorrente - st.resultado;
+            const pctDiaria = bancaInicioDoDia > 0 ? (st.resultado / bancaInicioDoDia) * 100 : 0;
+            
             const resColor = st.resultado >= 0 ? 'text-win' : 'text-loss';
             const badgeClass = st.resultado >= 0 ? 'badge-positive' : 'badge-negative';
             const signal = st.resultado >= 0 ? '+' : '';
@@ -251,13 +262,13 @@ async function carregarResumo() {
                 <td><span class="text-win">${st.wins}</span> / <span class="text-loss">${st.losses}</span></td>
                 <td class="${resColor}">${signal}$${st.resultado.toFixed(2)}</td>
                 <td class="${resColor}">${signal}${pctDiaria.toFixed(2)}%</td>
-                <td>$${capitalTotal.toFixed(2)}</td>
+                <td>$${capitalCorrente.toFixed(2)}</td>
                 <td><span class="badge ${badgeClass}">${st.resultado >= 0 ? 'Positivo' : 'Negativo'}</span></td>
             `;
+            
             tr.addEventListener('click', () => abrirDetalhesDia(dia, st.ops));
             if(tbody) tbody.appendChild(tr);
         });
-
 // ==========================================
         // --- CÁLCULO DAS ESTATÍSTICAS AVANÇADAS ---
         // ==========================================
@@ -358,8 +369,13 @@ function atualizarProjecao() {
     const metaInput = document.getElementById('meta-mensal');
     const metaPerc = metaInput ? parseFloat(metaInput.value) : 20;
     
-    const metaEmDinheiro = currentCapitalTotal * (metaPerc / 100);
+    // NOVA LÓGICA: Descobre o Capital Inicial do mês subtraindo o lucro atual da banca total
+    const capitalInicialMes = currentCapitalTotal - currentLucroMes;
+    
+    // A meta agora é calculada em cima do capital do início do mês
+    const metaEmDinheiro = capitalInicialMes * (metaPerc / 100);
     const faltaParaMeta = metaEmDinheiro - currentLucroMes;
+    
     const mediaLucroPorEntrada = currentQtdEntradas > 0 ? currentLucroMes / currentQtdEntradas : 0;
     
     let entradasEstimadas = '---';
@@ -429,40 +445,89 @@ function abrirDetalhesDia(dia, operacoesDoDia) {
     modalDetalhes.style.display = 'flex';
 }
 
+// ==========================================
+// GRÁFICO DE EVOLUÇÃO (AGRUPADO POR DIA)
+// ==========================================
 function renderizarGrafico(operacoes) {
     const canvas = document.getElementById('graficoEvolucao');
     if(!canvas) return;
+    
+    // Se já existe um gráfico, destrua-o antes de desenhar o novo
     if(window.meuGrafico) window.meuGrafico.destroy();
 
     const ctx = canvas.getContext('2d');
-    let acumulado = 0;
-    const dados = operacoes.sort((a,b) => new Date(a.data_operacao) - new Date(b.data_operacao)).map(op => {
-        const valor = op.resultado === 'Win' ? (op.valor * (op.payout / 100)) : (op.resultado === 'Loss' ? -op.valor : 0);
-        acumulado += valor;
-        return acumulado;
+    
+    // 1. Agrupar o lucro total de cada dia
+    const lucroPorDia = {};
+    operacoes.forEach(op => {
+        const d = new Date(op.data_operacao);
+        const dia = d.getUTCDate(); // Puxa o dia exato (UTC)
+        
+        const valorGanho = op.resultado === 'Win' ? (op.valor * (op.payout / 100)) : (op.resultado === 'Loss' ? -op.valor : 0);
+        
+        if(!lucroPorDia[dia]) lucroPorDia[dia] = 0;
+        lucroPorDia[dia] += valorGanho;
     });
 
+    // 2. Ordenar os dias de forma cronológica (Dia 1, 2, 3...)
+    const diasOrdenados = Object.keys(lucroPorDia).map(Number).sort((a,b) => a - b);
+    
+    let acumulado = 0;
+    const labels = [];
+    const dados = [];
+
+    // 3. Somar o lucro como uma "bola de neve" dia a dia
+    diasOrdenados.forEach(dia => {
+        acumulado += lucroPorDia[dia];
+        labels.push(dia); // Aqui o eixo X vai mostrar apenas o número do dia
+        dados.push(acumulado);
+    });
+
+    // 4. Desenhar o Gráfico
     window.meuGrafico = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: operacoes.map((_, i) => i + 1),
+            labels: labels,
             datasets: [{
                 label: 'Evolução de Lucro ($)',
                 data: dados,
-                borderColor: '#00ffa3',
+                borderColor: '#00ffa3', // Verde Neon
                 backgroundColor: 'rgba(0, 255, 163, 0.1)',
                 fill: true,
-                tension: 0.4
+                tension: 0.4, // Deixa a linha suave/curvada
+                pointBackgroundColor: '#0c1114',
+                pointBorderColor: '#00ffa3',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6
             }]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: { grid: { color: '#333' }, ticks: { color: '#888' } },
-                x: { grid: { display: false }, ticks: { color: '#888' } }
+                y: { 
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' }, 
+                    ticks: { color: '#888' } 
+                },
+                x: { 
+                    grid: { display: false }, 
+                    ticks: { color: '#888' } 
+                }
             },
-            plugins: { legend: { display: false } }
+            plugins: { 
+                legend: { display: false },
+                tooltip: {
+                    callbacks: {
+                        // Coloca um "Dia" e "$" no balão flutuante ao passar o mouse
+                        title: (context) => `Dia ${context[0].label}`,
+                        label: (context) => {
+                            let valor = context.raw;
+                            return ` Lucro Acumulado: ${valor >= 0 ? '+' : ''}$${valor.toFixed(2)}`;
+                        }
+                    }
+                }
+            }
         }
     });
 }
