@@ -8,149 +8,90 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 
 // ==========================================
-// 1. O VIGIA (PROTEÇÃO DE ROTA)
+// 1. O VIGIA E MODAIS (EVENTOS BÁSICOS)
 // ==========================================
 async function verificarAcesso() {
     try {
         const { data: { session }, error } = await supabase.auth.getSession();
-
-        if (error || !session) {
-            window.location.href = 'login.html';
-            return; 
-        }
-
+        if (error || !session) { window.location.href = 'login.html'; return; }
         console.log('Usuário logado:', session.user.email);
-        document.body.style.display = 'flex'; 
-
-    } catch (erroInesperado) {
-        console.error('Erro de acesso:', erroInesperado);
+        document.body.style.display = 'block'; 
+    } catch (erro) {
         window.location.href = 'login.html';
     }
 }
 verificarAcesso();
 
-
-// ==========================================
-// 2. ABRIR E FECHAR A JANELA MODAL
-// ==========================================
+// Modal Nova Entrada
 const modal = document.getElementById('modal-entrada');
 const btnAbrirModal = document.getElementById('btn-abrir-modal');
 const btnFecharModal = document.getElementById('btn-fechar-modal');
+if (btnAbrirModal) btnAbrirModal.addEventListener('click', () => modal.style.display = 'flex');
+if (btnFecharModal) btnFecharModal.addEventListener('click', () => modal.style.display = 'none');
 
-if (btnAbrirModal && modal) {
-    btnAbrirModal.addEventListener('click', () => {
-        modal.style.display = 'flex';
-    });
-}
+// Modal Banca
+const modalBanca = document.getElementById('modal-banca');
+const btnAbrirBanca = document.getElementById('btn-abrir-banca');
+const btnFecharBanca = document.getElementById('btn-fechar-banca');
+if (btnAbrirBanca) btnAbrirBanca.addEventListener('click', () => modalBanca.style.display = 'flex');
+if (btnFecharBanca) btnFecharBanca.addEventListener('click', () => modalBanca.style.display = 'none');
 
-if (btnFecharModal && modal) {
-    btnFecharModal.addEventListener('click', () => {
-        modal.style.display = 'none';
-    });
-}
+// Fechar Modal Detalhes (Estava perdido, agora está no lugar certo)
+const modalDetalhes = document.getElementById('modal-detalhes');
+const btnFecharDetalhes = document.getElementById('btn-fechar-detalhes');
+if (btnFecharDetalhes) btnFecharDetalhes.addEventListener('click', () => modalDetalhes.style.display = 'none');
 
-// Fecha clicando no fundo escuro
 window.addEventListener('click', (evento) => {
-    if (evento.target === modal) {
-        modal.style.display = 'none';
-    }
+    if (evento.target === modal) modal.style.display = 'none';
+    if (evento.target === modalBanca) modalBanca.style.display = 'none';
+    if (evento.target === modalDetalhes) modalDetalhes.style.display = 'none';
 });
 
 
 // ==========================================
-// 3. SALVAR OPERAÇÃO NO BANCO DE DADOS
+// 2. SALVAR DADOS (OPERAÇÕES E TRANSAÇÕES)
 // ==========================================
 const formNovaEntrada = document.getElementById('form-nova-entrada');
-
 if (formNovaEntrada) {
     formNovaEntrada.addEventListener('submit', async (evento) => {
-        // ESSA LINHA É A MÁGICA QUE IMPEDE A PÁGINA DE RECARREGAR
         evento.preventDefault(); 
-
         const btnSalvar = document.querySelector('.btn-salvar');
-        btnSalvar.textContent = 'SALVANDO...'; // Muda o texto do botão
-        btnSalvar.disabled = true; // Desativa o botão para não clicar duas vezes
-
+        btnSalvar.textContent = 'SALVANDO...'; btnSalvar.disabled = true;
         try {
-            // Lemos a sessão que já está no navegador (infalível), em vez de pedir pro servidor de novo
             const { data: { session } } = await supabase.auth.getSession();
-
-            if (!session) {
-                alert('Sua sessão expirou. Por favor, faça login novamente.');
-                window.location.href = 'login.html';
-                return;
-            }
-
-            // Pega tudo que você digitou
-            const ativo = document.getElementById('ativo').value;
-            const direcao = document.getElementById('direcao').value;
-            const valor = parseFloat(document.getElementById('valor').value);
-            const payout = parseFloat(document.getElementById('payout').value);
-            const resultado = document.getElementById('resultado').value;
-            const tempo_grafico = document.getElementById('tempo_grafico').value;
-            const tipo_vela = document.getElementById('tipo_vela').value;
-            const data_operacao = document.getElementById('data_operacao').value;
-            const motivo_entrada = document.getElementById('motivo_entrada').value;
-
-            // Manda para a tabela 'operacoes' usando o ID da sessão local
-            const { error } = await supabase
-                .from('operacoes')
-                .insert([
-                    {
-                        user_id: session.user.id, // <--- A MÁGICA MUDOU AQUI!
-                        ativo: ativo,
-                        direcao: direcao,
-                        valor: valor,
-                        payout: payout,
-                        resultado: resultado,
-                        tempo_grafico: tempo_grafico,
-                        tipo_vela: tipo_vela,
-                        data_operacao: data_operacao,
-                        motivo_entrada: motivo_entrada
-                    }
-                ]);
-
-            if (error) throw error; // Se o banco rejeitar, pula pro catch
-
-            // Sucesso!
-            alert('Operação registrada com sucesso no diário!');
-            
+            const { error } = await supabase.from('operacoes').insert([{
+                user_id: session.user.id,
+                ativo: document.getElementById('ativo').value,
+                direcao: document.getElementById('direcao').value,
+                valor: parseFloat(document.getElementById('valor').value),
+                payout: parseFloat(document.getElementById('payout').value),
+                resultado: document.getElementById('resultado').value,
+                tempo_grafico: document.getElementById('tempo_grafico').value,
+                tipo_vela: document.getElementById('tipo_vela').value,
+                data_operacao: document.getElementById('data_operacao').value,
+                motivo_entrada: document.getElementById('motivo_entrada').value
+            }]);
+            if (error) throw error;
+            alert('Operação registrada com sucesso!');
             formNovaEntrada.reset();
             modal.style.display = 'none';
-
+            carregarResumo(); // Atualiza painel instantaneamente
         } catch (erro) {
-            console.error('Erro ao salvar no banco:', erro);
             alert('Falha ao salvar a operação! Erro: ' + erro.message);
         } finally {
-            btnSalvar.textContent = 'SALVAR NO DIÁRIO';
-            btnSalvar.disabled = false;
+            btnSalvar.textContent = 'SALVAR NO DIÁRIO'; btnSalvar.disabled = false;
         }
     });
 }
 
-// ==========================================
-//4 . ELEMENTOS DA BANCA
-// ==========================================
-
-const modalBanca = document.getElementById('modal-banca');
-const btnAbrirBanca = document.getElementById('btn-abrir-banca');
-const btnFecharBanca = document.getElementById('btn-fechar-banca');
 const formTransacao = document.getElementById('form-transacao');
-
-// Abrir/Fechar Banca
-if (btnAbrirBanca) btnAbrirBanca.addEventListener('click', () => modalBanca.style.display = 'flex');
-if (btnFecharBanca) btnFecharBanca.addEventListener('click', () => modalBanca.style.display = 'none');
-
-// Salvar Transação
 if (formTransacao) {
     formTransacao.addEventListener('submit', async (e) => {
         e.preventDefault();
         const btn = e.target.querySelector('button');
         btn.textContent = 'PROCESSANDO...';
-
         try {
             const { data: { session } } = await supabase.auth.getSession();
-            
             const { error } = await supabase.from('transacoes').insert([{
                 user_id: session.user.id,
                 tipo: document.getElementById('tipo_transacao').value,
@@ -158,13 +99,11 @@ if (formTransacao) {
                 metodo: document.getElementById('metodo_transacao').value,
                 data_transacao: document.getElementById('data_transacao').value
             }]);
-
             if (error) throw error;
-
             alert('Movimentação registrada!');
             formTransacao.reset();
             modalBanca.style.display = 'none';
-            // Aqui futuramente chamaremos uma função para atualizar o Capital Inicial na tela
+            carregarResumo();
         } catch (err) {
             alert('Erro: ' + err.message);
         } finally {
@@ -173,26 +112,29 @@ if (formTransacao) {
     });
 }
 
-// --- FUNÇÃO PARA CARREGAR E CALCULAR TUDO ---
+
 // ==========================================
-// VARIÁVEIS GLOBAIS PARA A MATEMÁTICA INSTANTÂNEA
+// 3. INTELIGÊNCIA DO PAINEL (CÁLCULOS GERAIS)
 // ==========================================
 let currentCapitalTotal = 0;
 let currentLucroMes = 0;
 let currentQtdEntradas = 0;
 
-// ==========================================
-// FUNÇÃO PARA CARREGAR TUDO
-// ==========================================
 async function carregarResumo() {
     try {
         const { data: { session } } = await supabase.auth.getSession();
         const userId = session.user.id;
         
-        // Pega o mês que está selecionado na caixinha do topo
         const seletorMes = document.getElementById('seletor-mes');
         const mesAtual = seletorMes ? parseInt(seletorMes.value) : new Date().getMonth();
         const anoAtual = new Date().getFullYear();
+
+        // Troca o título grandão com o nome do mês selecionado
+        const tituloDisplay = document.getElementById('titulo-mes-display');
+        if (tituloDisplay && seletorMes) {
+            const nomeMes = seletorMes.options[seletorMes.selectedIndex].text;
+            tituloDisplay.textContent = `${nomeMes} · Desempenho`;
+        }
 
         const [ops, trans] = await Promise.all([
             supabase.from('operacoes').select('*').eq('user_id', userId),
@@ -202,11 +144,7 @@ async function carregarResumo() {
         const operacoes = ops.data || [];
         const transacoes = trans.data || [];
 
-        let lucroTotalTrades = 0;
-        let lucroMesTrades = 0;
-        let wins = 0, losses = 0;
-
-        // Filtra apenas as operações do mês escolhido
+        let lucroTotalTrades = 0, lucroMesTrades = 0, wins = 0, losses = 0;
         const opsMesAtual = operacoes.filter(op => {
             const d = new Date(op.data_operacao);
             return d.getMonth() === mesAtual && d.getFullYear() === anoAtual;
@@ -232,13 +170,10 @@ async function carregarResumo() {
             if(op.resultado === 'Win') statsPorDia[dia].wins++;
             if(op.resultado === 'Loss') statsPorDia[dia].losses++;
             statsPorDia[dia].resultado += valorGanho;
-            statsPorDia[dia].ops.push(op); // Salva as operações do dia para o log detalhado
+            statsPorDia[dia].ops.push(op); 
         });
 
-        let capitalEntrada = 0; 
-        let saquesPermanentes = 0;
-        let saquesMes = 0;
-
+        let capitalEntrada = 0, saquesPermanentes = 0, saquesMes = 0;
         transacoes.forEach(t => {
             const val = parseFloat(t.valor);
             const d = new Date(t.data_transacao);
@@ -251,13 +186,28 @@ async function carregarResumo() {
 
         const capitalTotal = capitalEntrada + lucroTotalTrades - saquesPermanentes;
         
-        // Atualiza as variáveis globais para o cálculo rápido da Meta
+        // --- O ROI AGORA ESTÁ DENTRO DA CAIXA CERTA! ---
+        const roiTotal = capitalEntrada > 0 ? ((lucroTotalTrades / capitalEntrada) * 100) : 0;
+        const headerRoi = document.getElementById('visor-header-roi');
+        if(headerRoi) {
+            headerRoi.textContent = `${roiTotal >= 0 ? '+' : ''}${roiTotal.toFixed(2)}%`;
+            headerRoi.style.color = roiTotal >= 0 ? 'var(--neon-green)' : 'var(--neon-red)';
+        }
+        
         currentCapitalTotal = capitalTotal;
         currentLucroMes = lucroMesTrades;
         currentQtdEntradas = opsMesAtual.length;
 
-        // Atualiza Interface (Cards Básicos e Cabeçalho)
+        // Atualiza Cards Principais
         document.getElementById('visor-capital-total').textContent = `$${capitalTotal.toFixed(2)}`;
+        document.getElementById('visor-header-capital').textContent = `$${capitalTotal.toFixed(2)}`;
+        
+        const headerResultado = document.getElementById('visor-header-resultado');
+        if(headerResultado) {
+            headerResultado.textContent = `${lucroMesTrades >= 0 ? '+' : ''}$${lucroMesTrades.toFixed(2)}`;
+            headerResultado.style.color = lucroMesTrades >= 0 ? 'var(--neon-green)' : 'var(--neon-red)';
+        }
+
         document.getElementById('visor-lucro-mes').textContent = `${lucroMesTrades >= 0 ? '+' : ''}$${lucroMesTrades.toFixed(2)}`;
         document.getElementById('visor-lucro-total').textContent = `${lucroTotalTrades >= 0 ? '+' : ''}$${lucroTotalTrades.toFixed(2)}`;
         document.getElementById('visor-entradas').textContent = wins + losses;
@@ -288,14 +238,12 @@ async function carregarResumo() {
                 <td>$${capitalTotal.toFixed(2)}</td>
                 <td><span class="badge ${badgeClass}">${st.resultado >= 0 ? 'Positivo' : 'Negativo'}</span></td>
             `;
-            
-            // Evento para abrir a janela de detalhes ao clicar na linha
             tr.addEventListener('click', () => abrirDetalhesDia(dia, st.ops));
             if(tbody) tbody.appendChild(tr);
         });
 
-        // Atualiza a projeção de meta de forma independente
         atualizarProjecao();
+        renderizarGrafico(opsMesAtual); // Passa apenas as operações do mês para o gráfico
 
     } catch (error) {
         console.error("Erro ao carregar resumo:", error);
@@ -303,7 +251,7 @@ async function carregarResumo() {
 }
 
 // ==========================================
-// MATEMÁTICA INSTANTÂNEA DA PROJEÇÃO
+// 4. METAS E DETALHES
 // ==========================================
 function atualizarProjecao() {
     const metaInput = document.getElementById('meta-mensal');
@@ -332,69 +280,61 @@ function atualizarProjecao() {
     if(document.getElementById('barra-progresso')) document.getElementById('barra-progresso').style.width = `${progressoLimitado}%`;
 }
 
-// Evento que escuta as teclas na caixinha de Meta e atualiza instantaneamente
+// Eventos de Gatilho Rápido
 const inputMeta = document.getElementById('meta-mensal');
 if(inputMeta) inputMeta.addEventListener('input', atualizarProjecao);
 
-// Evento para atualizar todo o painel ao trocar de mês
 const seletorMes = document.getElementById('seletor-mes');
 if(seletorMes) seletorMes.addEventListener('change', carregarResumo);
 
-// ==========================================
-// FUNÇÃO PARA A TABELA DETALHADA (MODAL)
-// ==========================================
+// Abrir Tabela Detalhada
 function abrirDetalhesDia(dia, operacoesDoDia) {
-    document.getElementById('titulo-detalhes').textContent = `Operations · Day ${dia}`;
-    document.getElementById('subtitulo-detalhes').textContent = `${operacoesDoDia.length} entries · detailed log`;
+    document.getElementById('titulo-detalhes').textContent = `Operações · Dia ${dia}`;
+    document.getElementById('subtitulo-detalhes').textContent = `${operacoesDoDia.length} entradas · log detalhado`;
 
     const tbody = document.getElementById('tabela-detalhes-corpo');
-    tbody.innerHTML = ''; // Limpa a tabela antes de preencher
+    tbody.innerHTML = ''; 
 
     operacoesDoDia.sort((a,b) => new Date(a.data_operacao) - new Date(b.data_operacao)).forEach(op => {
         const d = new Date(op.data_operacao);
         const hora = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
-        
         const resultColor = op.resultado === 'Win' ? 'text-win' : (op.resultado === 'Loss' ? 'text-loss' : '');
         const sideIcon = op.direcao === 'Call' ? '↗ Compra' : '↘ Venda';
         const sideClass = op.direcao === 'Call' ? 'side-buy' : 'side-sell';
-        
         const valorGanho = op.resultado === 'Win' ? (op.valor * (op.payout / 100)) : (op.resultado === 'Loss' ? -op.valor : 0);
         const signal = valorGanho >= 0 ? '+' : '';
-
         const badgeResultado = `<span class="badge ${op.resultado === 'Win' ? 'badge-positive' : (op.resultado === 'Loss' ? 'badge-negative' : '')}">${op.resultado}</span>`;
 
         const tr = document.createElement('tr');
+        // ATENÇÃO: Adicionei o onclick direto aqui chamando o window.deletarOperacao (infalível)
         tr.innerHTML = `
             <td>⏱ ${hora}</td>
             <td style="font-weight: 600;">${op.ativo}</td>
             <td>$${op.valor}</td>
             <td>${op.payout}%</td>
-            <td class="${sideClass}">${sideIcon}</td>
-            <td>${badgeResultado}</td>
+            <td class="${sideClass} text-center">${sideIcon}</td>
+            <td class="text-center">${badgeResultado}</td>
             <td class="${resultColor} font-weight-bold">${signal}$${Math.abs(valorGanho).toFixed(2)}</td>
             <td style="color: var(--text-muted);">${op.motivo_entrada || '-'}</td>
-            <td>
-                <button class="btn-delete" onclick="deletarOperacao('${op.id}')" title="Excluir Entrada">🗑️</button>
+            <td class="text-center">
+                <button class="btn-delete" onclick="window.deletarOperacao('${op.id}')" title="Excluir Entrada">🗑️</button>
             </td>
         `;
         tbody.appendChild(tr);
     });
 
-    document.getElementById('modal-detalhes').style.display = 'flex';
+    modalDetalhes.style.display = 'flex';
 }
 
-// Fechar modal de detalhes
-const btnFecharDetalhes = document.getElementById('btn-fechar-detalhes');
-if(btnFecharDetalhes) {
-    btnFecharDetalhes.addEventListener('click', () => {
-        document.getElementById('modal-detalhes').style.display = 'none';
-    });
-}
-
+// Gráfico
 function renderizarGrafico(operacoes) {
-    const ctx = document.getElementById('graficoEvolucao').getContext('2d');
+    const canvas = document.getElementById('graficoEvolucao');
+    if(!canvas) return;
     
-    // Lógica simples de lucro acumulado por tempo para o gráfico
+    // Se já existe um gráfico, destrua-o antes de desenhar o novo (previne bug de sobreposição ao mudar de mês)
+    if(window.meuGrafico) window.meuGrafico.destroy();
+
+    const ctx = canvas.getContext('2d');
     let acumulado = 0;
     const dados = operacoes.sort((a,b) => new Date(a.data_operacao) - new Date(b.data_operacao)).map(op => {
         const valor = op.resultado === 'Win' ? (op.valor * (op.payout / 100)) : (op.resultado === 'Loss' ? -op.valor : 0);
@@ -402,7 +342,7 @@ function renderizarGrafico(operacoes) {
         return acumulado;
     });
 
-    new Chart(ctx, {
+    window.meuGrafico = new Chart(ctx, {
         type: 'line',
         data: {
             labels: operacoes.map((_, i) => i + 1),
@@ -427,54 +367,24 @@ function renderizarGrafico(operacoes) {
     });
 }
 
-// Chamar a função ao carregar a página
-carregarResumo();
-
-// --- CÁLCULO DO ROI (Retorno sobre Investimento) ---
-        // O quanto você lucrou em relação ao que você tirou do próprio bolso
-        const roiTotal = capitalEntrada > 0 ? ((lucroTotalTrades / capitalEntrada) * 100) : 0;
-
-        // --- ATUALIZAR CABEÇALHO ---
-        document.getElementById('visor-header-capital').textContent = `$${capitalTotal.toFixed(2)}`;
-        
-        // Elemento Resultado Mensal (com cor dinâmica Verde ou Vermelha)
-        const headerResultado = document.getElementById('visor-header-resultado');
-        headerResultado.textContent = `${lucroMesTrades >= 0 ? '+' : ''}$${lucroMesTrades.toFixed(2)}`;
-        headerResultado.style.color = lucroMesTrades >= 0 ? 'var(--neon-green)' : 'var(--neon-red)';
-        
-        // Elemento ROI Total (com cor dinâmica Verde ou Vermelha)
-        const headerRoi = document.getElementById('visor-header-roi');
-        headerRoi.textContent = `${roiTotal >= 0 ? '+' : ''}${roiTotal.toFixed(2)}%`;
-        headerRoi.style.color = roiTotal >= 0 ? 'var(--neon-green)' : 'var(--neon-red)';
-
 // ==========================================
-// FUNÇÃO PARA EXCLUIR UMA OPERAÇÃO (DELETE)
+// 5. EXCLUIR OPERAÇÃO DO BANCO (GLOBAL)
 // ==========================================
 window.deletarOperacao = async function(id) {
-    // Pede uma confirmação para não apagar sem querer
-    const confirmacao = confirm("Tem certeza que deseja excluir esta operação? Isso recalculará toda a sua banca e metas.");
-    
+    const confirmacao = confirm("Tem certeza que deseja excluir esta operação?");
     if (confirmacao) {
         try {
-            // Vai no Supabase e apaga a linha que tem esse ID
-            const { error } = await supabase
-                .from('operacoes')
-                .delete()
-                .eq('id', id);
-
+            const { error } = await supabase.from('operacoes').delete().eq('id', id);
             if (error) throw error;
-
+            
             alert('Operação excluída com sucesso!');
-            
-            // Fecha o modal de detalhes
             document.getElementById('modal-detalhes').style.display = 'none';
-            
-            // Recarrega todo o painel para atualizar os lucros, win rate e gráficos!
             carregarResumo(); 
-
         } catch (error) {
-            console.error("Erro ao deletar:", error);
-            alert("Erro ao excluir operação: " + error.message);
+            alert("Erro ao excluir: " + error.message);
         }
     }
 };
+
+// Iniciar
+carregarResumo();

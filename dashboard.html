@@ -5,23 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SilentTrade - Trading Journal Pro</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./style.css?v=12">
+    <link rel="stylesheet" href="./style.css?v=13">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body style="display: none;">
-
-    <div class="dashboard-container">
+<body style="display: none;"> <div class="dashboard-container">
         
         <header class="main-header">
             <div class="logo-area">
                 <span class="icon">📈</span>
                 <span class="brand-name">SilentTrade</span>
+                
                 <select id="seletor-mes" class="month-select">
                     <option value="0">Janeiro</option>
                     <option value="1">Fevereiro</option>
                     <option value="2">Março</option>
                     <option value="3">Abril</option>
-                    <option value="4">Maio</option>
+                    <option value="4" selected>Maio</option>
                     <option value="5">Junho</option>
                     <option value="6">Julho</option>
                     <option value="7">Agosto</option>
@@ -31,6 +30,7 @@
                     <option value="11">Dezembro</option>
                 </select>
             </div>
+
             <div class="summary-area">
                 <div class="summary-item">
                     <span class="label">Capital Atual</span>
@@ -54,7 +54,7 @@
 
         <section class="performance-title">
             <p class="journal-tag">TRADING JOURNAL</p>
-            <h1>Janeiro · Desempenho</h1>
+            <h1 id="titulo-mes-display">Maio · Desempenho</h1>
             <p class="journal-sub">Gestão de Capital em Opções Binárias</p>
         </section>
 
@@ -123,7 +123,7 @@
                 <div class="panel-header">
                     <div class="panel-title">
                         <h2>Resultados do Mês</h2>
-                        <p>Clique em uma linha para ver as operações</p>
+                        <p>Clique em uma linha para ver as operações do dia</p>
                     </div>
                     <div class="panel-actions">
                         <input type="text" placeholder="🔍 Buscar dia..." class="search-input">
@@ -164,15 +164,15 @@
 
                     <div class="projection-stats">
                         <div class="proj-stat-box">
-                            <span class="proj-label">Meta ($)</span>
+                            <span class="proj-label">Meta em Valor ($)</span>
                             <strong class="proj-value" id="visor-meta-valor">$0.00</strong>
                         </div>
                         <div class="proj-stat-box highlight-box">
-                            <span class="proj-label">Falta para Meta</span>
+                            <span class="proj-label">Falta para Bater</span>
                             <strong class="proj-value" id="visor-meta-restante">$0.00</strong>
                         </div>
                         <div class="proj-stat-box" style="border-color: var(--neon-green);">
-                            <span class="proj-label">Cliques p/ Meta</span>
+                            <span class="proj-label">Cliques Estimados</span>
                             <strong class="proj-value" id="visor-entradas-estimadas" style="color: var(--neon-green);">0</strong>
                         </div>
                     </div>
@@ -221,66 +221,58 @@
                             <span class="adv-label">MELHOR ATIVO</span>
                             <div class="adv-value" id="adv-melhor-ativo">---</div>
                         </div>
-
                     </div>
                 </div>
 
             </div> 
         </section>
+    </div>
 
-        </div>
-         <!-- MODAL DE GESTÃO DE BANCA-->
-        <div id="modal-banca" class="modal-overlay" style="display: none;">
-            <div class="modal-content" style="max-width: 400px;">
+    <div id="modal-banca" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header">
                 <h2>Movimentação de Banca</h2>
                 <button id="btn-fechar-banca" class="btn-close">&times;</button>
             </div>
-            
-                <form id="form-transacao">
+            <form id="form-transacao">
+                <div class="input-group">
+                    <label>Tipo de Registro</label>
+                    <select id="tipo_transacao" required>
+                        <option value="Capital Inicial">Capital Inicial (Banca Global)</option>
+                        <option value="Aporte">Aporte Mensal (Aumentar Banca)</option>
+                        <option value="Deposito">Enviar para Corretora (Depósito)</option>
+                        <option value="Saque Permanente">Saque Permanente (Retirar da Banca)</option>
+                    </select>
+                </div>
+                <div class="form-row">
                     <div class="input-group">
-                        <label>Tipo de Registro</label>
-                        <select id="tipo_transacao" required>
-                            <option value="Capital Inicial">Capital Inicial (Fora da Corretora)</option>
-                            <option value="Aporte">Aporte Mensal (Fora da Corretora)</option>
-                            <option value="Deposito">Enviar para Corretora (Depósito)</option>
-                            <option value="Saque">Retirar da Corretora (Saque)</option>
+                        <label>Valor ($)</label>
+                        <input type="number" id="valor_transacao" step="0.01" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Método</label>
+                        <select id="metodo_transacao" required>
+                            <option value="Pix">Pix</option>
+                            <option value="Cripto">Criptomoeda</option>
+                            <option value="Transferência">Transferência</option>
                         </select>
                     </div>
-
-                    <div class="form-row">
-                        <div class="input-group">
-                            <label>Valor ($)</label>
-                            <input type="number" id="valor_transacao" step="0.01" required>
-                        </div>
-                        <div class="input-group">
-                            <label>Método</label>
-                            <select id="metodo_transacao" required>
-                                <option value="Pix">Pix</option>
-                                <option value="Cripto">Criptomoeda</option>
-                                <option value="Transferência">Transferência</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div class="input-group">
-                        <label>Data</label>
-                        <input type="datetime-local" id="data_transacao" required>
-                    </div>
-
-                    <button type="submit" class="btn-salvar" style="background-color: #3498db;">CONFIRMAR REGISTRO</button>
-                </form>
-            </div>
+                </div>
+                <div class="input-group">
+                    <label>Data</label>
+                    <input type="datetime-local" id="data_transacao" required>
+                </div>
+                <button type="submit" class="btn-salvar" style="background-color: #3498db;">CONFIRMAR REGISTRO</button>
+            </form>
         </div>
+    </div>
 
-        <!-- MODAL DE NOVA ENTRADA -->
     <div id="modal-entrada" class="modal-overlay" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
                 <h2>Registrar Operação</h2>
                 <button id="btn-fechar-modal" class="btn-close">&times;</button>
             </div>
-            
             <form id="form-nova-entrada">
                 <div class="form-row">
                     <div class="input-group">
@@ -295,11 +287,10 @@
                         </select>
                     </div>
                 </div>
-
                 <div class="form-row">
                     <div class="input-group">
                         <label for="valor">Valor ($)</label>
-                        <input type="number" id="valor" step="0.01" placeholder="Ex: 50.00" required>
+                        <input type="number" id="valor" step="0.01" placeholder="Ex: 10.00" required>
                     </div>
                     <div class="input-group">
                         <label for="payout">Payout (%)</label>
@@ -314,7 +305,6 @@
                         </select>
                     </div>
                 </div>
-
                 <div class="form-row">
                     <div class="input-group">
                         <label for="tempo_grafico">Tempo Gráfico</label>
@@ -332,23 +322,19 @@
                         </select>
                     </div>
                 </div>
-
                 <div class="input-group">
                     <label for="data_operacao">Data e Hora da Entrada</label>
                     <input type="datetime-local" id="data_operacao" required>
                 </div>
-
                 <div class="input-group">
                     <label for="motivo_entrada">Motivo / Estratégia</label>
                     <input type="text" id="motivo_entrada" placeholder="Ex: Pullback na EMA 20" required>
                 </div>
-
                 <button type="submit" class="btn-salvar">Salvar no Diário</button>
             </form>
         </div>
     </div>
 
-        <!-- MODAL DETALHES DE ENTRADA -->
     <div id="modal-detalhes" class="modal-overlay" style="display: none;">
         <div class="modal-content" style="max-width: 950px;">
             <div class="modal-header">
@@ -358,7 +344,6 @@
                 </div>
                 <button id="btn-fechar-detalhes" class="btn-close">&times;</button>
             </div>
-            
             <div class="table-responsive">
                 <table class="trading-table">
                     <thead>
@@ -371,7 +356,8 @@
                             <th>RESULTADO</th>
                             <th>LUCRO</th>
                             <th>ESTRATÉGIA</th>
-                            <th>AÇÃO</th> </tr>
+                            <th class="text-center">AÇÃO</th>
+                        </tr>
                     </thead>
                     <tbody id="tabela-detalhes-corpo">
                         </tbody>
@@ -380,6 +366,6 @@
         </div>
     </div>
 
-    <script type="module" src="./app.js?v=12"></script>
+    <script type="module" src="./app.js?v=13"></script>
 </body>
 </html>
