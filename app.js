@@ -388,3 +388,83 @@ window.deletarOperacao = async function(id) {
 
 // Iniciar
 carregarResumo();
+
+// ==========================================
+// 6. HISTÓRICO DE MOVIMENTAÇÕES DE BANCA
+// ==========================================
+
+const modalHistoricoBanca = document.getElementById('modal-historico-banca');
+const btnVerHistorico = document.getElementById('btn-ver-historico-banca');
+const btnFecharHistorico = document.getElementById('btn-fechar-historico-banca');
+
+if (btnVerHistorico) {
+    btnVerHistorico.addEventListener('click', () => {
+        // Fecha o modal de registro para abrir o de histórico
+        document.getElementById('modal-banca').style.display = 'none';
+        abrirHistoricoBanca();
+    });
+}
+
+if (btnFecharHistorico) {
+    btnFecharHistorico.addEventListener('click', () => {
+        modalHistoricoBanca.style.display = 'none';
+    });
+}
+
+async function abrirHistoricoBanca() {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        const { data: transacoes, error } = await supabase
+            .from('transacoes')
+            .select('*')
+            .eq('user_id', session.user.id)
+            .order('data_transacao', { ascending: false });
+
+        if (error) throw error;
+
+        const tbody = document.getElementById('tabela-historico-banca-corpo');
+        tbody.innerHTML = '';
+
+        transacoes.forEach(t => {
+            const d = new Date(t.data_transacao);
+            const dataFormatada = d.toLocaleDateString('pt-BR') + ' ' + d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+            
+            const colorClass = (t.tipo.includes('Saque')) ? 'text-loss' : 'text-win';
+            const sinal = (t.tipo.includes('Saque')) ? '-' : '+';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="font-size: 0.85rem;">${dataFormatada}</td>
+                <td style="font-weight: 600;">${t.tipo}</td>
+                <td class="${colorClass}">${sinal}$${t.valor.toFixed(2)}</td>
+                <td>${t.metodo}</td>
+                <td class="text-center">
+                    <button class="btn-delete" onclick="window.deletarTransacao('${t.id}')" title="Excluir Registro">🗑️</button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        modalHistoricoBanca.style.display = 'flex';
+
+    } catch (error) {
+        alert("Erro ao carregar histórico: " + error.message);
+    }
+}
+
+// Função para deletar movimentação de banca
+window.deletarTransacao = async function(id) {
+    if (confirm("Deseja excluir este registro de banca? Isso afetará seu Capital Total imediatamente.")) {
+        try {
+            const { error } = await supabase.from('transacoes').delete().eq('id', id);
+            if (error) throw error;
+            
+            alert('Registro removido!');
+            modalHistoricoBanca.style.display = 'none';
+            carregarResumo(); // Recalcula tudo na tela principal
+        } catch (error) {
+            alert("Erro ao excluir: " + error.message);
+        }
+    }
+};

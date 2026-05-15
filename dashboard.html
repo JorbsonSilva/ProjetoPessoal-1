@@ -53,7 +53,7 @@
         </header>
 
         <section class="performance-title">
-            <p class="journal-tag">TRADING JOURNAL</p>
+            <p class="journal-tag">DIÁRIO DE NEGOCIAÇÃO</p>
             <h1 id="titulo-mes-display">Maio · Desempenho</h1>
             <p class="journal-sub">Gestão de Capital em Opções Binárias</p>
         </section>
@@ -124,10 +124,6 @@
                     <div class="panel-title">
                         <h2>Resultados do Mês</h2>
                         <p>Clique em uma linha para ver as operações do dia</p>
-                    </div>
-                    <div class="panel-actions">
-                        <input type="text" placeholder="🔍 Buscar dia..." class="search-input">
-                        <button class="btn-export">📥 CSV</button>
                     </div>
                 </div>
 
@@ -232,8 +228,10 @@
         <div class="modal-content" style="max-width: 400px;">
             <div class="modal-header">
                 <h2>Movimentação de Banca</h2>
+                <button id="btn-ver-historico-banca" class="btn-secondary" style="padding: 5px 10px; font-size: 0.7rem;">📜 VER HISTÓRICO</button>
                 <button id="btn-fechar-banca" class="btn-close">&times;</button>
             </div>
+            
             <form id="form-transacao">
                 <div class="input-group">
                     <label>Tipo de Registro</label>
@@ -360,6 +358,34 @@
                         </tr>
                     </thead>
                     <tbody id="tabela-detalhes-corpo">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="modal-historico-banca" class="modal-overlay" style="display: none;">
+        <div class="modal-content" style="max-width: 700px;">
+            <div class="modal-header">
+                <div>
+                    <h2>Histórico de Movimentações</h2>
+                    <p style="color: var(--text-muted); font-size: 0.85rem;">Depósitos, Aportes e Saques</p>
+                </div>
+                <button id="btn-fechar-historico-banca" class="btn-close">&times;</button>
+            </div>
+            
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="trading-table">
+                    <thead>
+                        <tr>
+                            <th>DATA</th>
+                            <th>TIPO</th>
+                            <th>VALOR</th>
+                            <th>MÉTODO</th>
+                            <th class="text-center">AÇÃO</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-historico-banca-corpo">
                         </tbody>
                 </table>
             </div>
