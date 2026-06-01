@@ -188,18 +188,49 @@ async function carregarResumo() {
             statsPorDia[dia].ops.push(op); 
         });
 
-        let capitalEntrada = 0, saquesPermanentes = 0, saquesMes = 0;
+       let capitalEntrada = 0, saquesPermanentes = 0;
+        let depositosCorretora = 0, saquesCorretora = 0;
+
         transacoes.forEach(t => {
             const val = parseFloat(t.valor);
-            const d = new Date(t.data_transacao);
+            
             if(t.tipo === 'Capital Inicial' || t.tipo === 'Aporte') capitalEntrada += val;
             if(t.tipo === 'Saque Permanente') saquesPermanentes += val;
             
-            // CORREÇÃO: Ler mês de transações em UTC
-            if(d.getUTCMonth() === mesAtual && d.getUTCFullYear() === anoAtual) {
-                if(t.tipo === 'Saque Reserva' || t.tipo === 'Saque Permanente') saquesMes += val;
-            }
+            if(t.tipo === 'Deposito') depositosCorretora += val;
+            // Lê o novo tipo (Saque Corretora) ou legados (Saque Reserva)
+            if(t.tipo === 'Saque Corretora' || t.tipo === 'Saque Reserva') saquesCorretora += val; 
         });
+
+        // --- A MÁGICA DOS 3 BALDES ---
+        // 1. Total Global
+        const capitalTotal = capitalEntrada + lucroTotalTrades - saquesPermanentes;
+        
+        // 2. Corretora = O que depositou - O que sacou + Lucro das operações
+        const capitalCorretora = depositosCorretora - saquesCorretora + lucroTotalTrades;
+        
+        // 3. Seguro (Banco) = O que entrou de aporte - O que enviou pra corretora + O que sacou da corretora - O que retirou do projeto
+        const capitalSeguro = capitalEntrada - depositosCorretora + saquesCorretora - saquesPermanentes;
+
+        
+        const roiTotal = capitalEntrada > 0 ? ((lucroTotalTrades / capitalEntrada) * 100) : 0;
+        const headerRoi = document.getElementById('visor-header-roi');
+        if(headerRoi) {
+            headerRoi.textContent = `${roiTotal >= 0 ? '+' : ''}${roiTotal.toFixed(2)}%`;
+            headerRoi.style.color = roiTotal >= 0 ? 'var(--neon-green)' : 'var(--neon-red)';
+        }
+        
+        currentCapitalTotal = capitalTotal;
+        currentLucroMes = lucroMesTrades;
+        currentQtdEntradas = opsMesAtual.length;
+
+        // Atualiza Cards Principais
+        document.getElementById('visor-capital-total').textContent = `$${capitalTotal.toFixed(2)}`;
+        document.getElementById('visor-header-capital').textContent = `$${capitalTotal.toFixed(2)}`;
+        
+        // Injeta os valores nos WIDGETS DO TOPO
+        if(document.getElementById('visor-capital-corretora')) document.getElementById('visor-capital-corretora').textContent = `$${capitalCorretora.toFixed(2)}`;
+        if(document.getElementById('visor-capital-seguro')) document.getElementById('visor-capital-seguro').textContent = `$${capitalSeguro.toFixed(2)}`;
 
         const capitalTotal = capitalEntrada + lucroTotalTrades - saquesPermanentes;
         

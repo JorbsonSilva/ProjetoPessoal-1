@@ -163,6 +163,44 @@ body {
     margin-bottom: 0;
 }
 
+/* --- ÁREA DOS WIDGETS DO TOPO --- */
+.top-widgets-area {
+    display: flex;
+    gap: 15px;
+    align-items: stretch;
+    flex-wrap: wrap;
+}
+
+.mini-capital-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 140px;
+}
+
+.mini-capital-card.border-blue {
+    border-color: rgba(52, 152, 219, 0.4);
+}
+
+.mini-label {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-bottom: 5px;
+    letter-spacing: 0.5px;
+}
+
+.mini-value {
+    font-size: 1.25rem;
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
 /* --- CALCULADORA DE ENTRADA RÁPIDA --- */
 .entry-calculator {
     background-color: var(--bg-card);
