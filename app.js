@@ -127,7 +127,7 @@ if (formTransacao) {
 
 
 // ==========================================
-// 3. INTELIGÊNCIA DO PAINEL E CORREÇÃO DE FUSO (UTC)
+// 3. INTELIGÊNCIA DO PAINEL (RESUMO)
 // ==========================================
 let currentCapitalTotal = 0;
 let currentLucroMes = 0;
@@ -160,7 +160,6 @@ async function carregarResumo() {
         
         const opsMesAtual = operacoes.filter(op => {
             const d = new Date(op.data_operacao);
-            // CORREÇÃO: Usar getUTC para ignorar o fuso horário local
             return d.getUTCMonth() === mesAtual && d.getUTCFullYear() === anoAtual;
         });
 
@@ -177,7 +176,6 @@ async function carregarResumo() {
             if(op.resultado === 'Win') wins++;
             if(op.resultado === 'Loss') losses++;
 
-            // CORREÇÃO: Agrupar o dia pelo UTC, não pelo local
             const dia = new Date(op.data_operacao).getUTCDate();
             if(!statsPorDia[dia]) statsPorDia[dia] = { entradas: 0, wins: 0, losses: 0, resultado: 0, ops: [] };
             
@@ -188,7 +186,8 @@ async function carregarResumo() {
             statsPorDia[dia].ops.push(op); 
         });
 
-       let capitalEntrada = 0, saquesPermanentes = 0;
+        // --- CÁLCULO DOS 3 BALDES ---
+        let capitalEntrada = 0, saquesPermanentes = 0;
         let depositosCorretora = 0, saquesCorretora = 0;
 
         transacoes.forEach(t => {
@@ -198,21 +197,13 @@ async function carregarResumo() {
             if(t.tipo === 'Saque Permanente') saquesPermanentes += val;
             
             if(t.tipo === 'Deposito') depositosCorretora += val;
-            // Lê o novo tipo (Saque Corretora) ou legados (Saque Reserva)
             if(t.tipo === 'Saque Corretora' || t.tipo === 'Saque Reserva') saquesCorretora += val; 
         });
 
-        // --- A MÁGICA DOS 3 BALDES ---
-        // 1. Total Global
         const capitalTotal = capitalEntrada + lucroTotalTrades - saquesPermanentes;
-        
-        // 2. Corretora = O que depositou - O que sacou + Lucro das operações
         const capitalCorretora = depositosCorretora - saquesCorretora + lucroTotalTrades;
-        
-        // 3. Seguro (Banco) = O que entrou de aporte - O que enviou pra corretora + O que sacou da corretora - O que retirou do projeto
         const capitalSeguro = capitalEntrada - depositosCorretora + saquesCorretora - saquesPermanentes;
 
-        
         const roiTotal = capitalEntrada > 0 ? ((lucroTotalTrades / capitalEntrada) * 100) : 0;
         const headerRoi = document.getElementById('visor-header-roi');
         if(headerRoi) {
@@ -225,60 +216,38 @@ async function carregarResumo() {
         currentQtdEntradas = opsMesAtual.length;
 
         // Atualiza Cards Principais
-        document.getElementById('visor-capital-total').textContent = `$${capitalTotal.toFixed(2)}`;
-        document.getElementById('visor-header-capital').textContent = `$${capitalTotal.toFixed(2)}`;
+        if(document.getElementById('visor-capital-total')) document.getElementById('visor-capital-total').textContent = `$${capitalTotal.toFixed(2)}`;
+        if(document.getElementById('visor-header-capital')) document.getElementById('visor-header-capital').textContent = `$${capitalTotal.toFixed(2)}`;
         
-        // Injeta os valores nos WIDGETS DO TOPO
+        // Atualiza Cards de Seguro e Corretora
         if(document.getElementById('visor-capital-corretora')) document.getElementById('visor-capital-corretora').textContent = `$${capitalCorretora.toFixed(2)}`;
         if(document.getElementById('visor-capital-seguro')) document.getElementById('visor-capital-seguro').textContent = `$${capitalSeguro.toFixed(2)}`;
 
-        const capitalTotal = capitalEntrada + lucroTotalTrades - saquesPermanentes;
-        
-        const roiTotal = capitalEntrada > 0 ? ((lucroTotalTrades / capitalEntrada) * 100) : 0;
-        const headerRoi = document.getElementById('visor-header-roi');
-        if(headerRoi) {
-            headerRoi.textContent = `${roiTotal >= 0 ? '+' : ''}${roiTotal.toFixed(2)}%`;
-            headerRoi.style.color = roiTotal >= 0 ? 'var(--neon-green)' : 'var(--neon-red)';
-        }
-        
-        currentCapitalTotal = capitalTotal;
-        currentLucroMes = lucroMesTrades;
-        currentQtdEntradas = opsMesAtual.length;
-
-        // Atualiza Cards
-        document.getElementById('visor-capital-total').textContent = `$${capitalTotal.toFixed(2)}`;
-        document.getElementById('visor-header-capital').textContent = `$${capitalTotal.toFixed(2)}`;
-        
         const headerResultado = document.getElementById('visor-header-resultado');
         if(headerResultado) {
             headerResultado.textContent = `${lucroMesTrades >= 0 ? '+' : ''}$${lucroMesTrades.toFixed(2)}`;
             headerResultado.style.color = lucroMesTrades >= 0 ? 'var(--neon-green)' : 'var(--neon-red)';
         }
 
-        document.getElementById('visor-lucro-mes').textContent = `${lucroMesTrades >= 0 ? '+' : ''}$${lucroMesTrades.toFixed(2)}`;
-        document.getElementById('visor-lucro-total').textContent = `${lucroTotalTrades >= 0 ? '+' : ''}$${lucroTotalTrades.toFixed(2)}`;
-        document.getElementById('visor-entradas').textContent = wins + losses;
-        document.getElementById('visor-wins-losses').textContent = `${wins}W · ${losses}L`;
+        if(document.getElementById('visor-lucro-mes')) document.getElementById('visor-lucro-mes').textContent = `${lucroMesTrades >= 0 ? '+' : ''}$${lucroMesTrades.toFixed(2)}`;
+        if(document.getElementById('visor-lucro-total')) document.getElementById('visor-lucro-total').textContent = `${lucroTotalTrades >= 0 ? '+' : ''}$${lucroTotalTrades.toFixed(2)}`;
+        if(document.getElementById('visor-entradas')) document.getElementById('visor-entradas').textContent = wins + losses;
+        if(document.getElementById('visor-wins-losses')) document.getElementById('visor-wins-losses').textContent = `${wins}W · ${losses}L`;
         
         const winRate = (wins + losses) > 0 ? ((wins / (wins + losses)) * 100).toFixed(1) : 0;
-        document.getElementById('visor-winrate').textContent = `${winRate}%`;
+        if(document.getElementById('visor-winrate')) document.getElementById('visor-winrate').textContent = `${winRate}%`;
 
-        // Preenche a Tabela Diária
+        // Preenche a Tabela Diária com Capital Corrente
         const tbody = document.getElementById('tabela-resultados-corpo');
         if(tbody) tbody.innerHTML = '';
 
-        // --- NOVA LÓGICA DE CAPITAL ACUMULADO ---
-        // Descobre com quanto você iniciou o mês (Capital Total menos o Lucro do Mês)
         let capitalCorrente = capitalTotal - lucroMesTrades;
 
         const diasOrdenados = Object.keys(statsPorDia).map(Number).sort((a,b) => a - b);
         diasOrdenados.forEach(dia => {
             const st = statsPorDia[dia];
             
-            // 1. Soma o lucro/prejuízo do dia ao capital corrente
             capitalCorrente += st.resultado;
-
-            // 2. Calcula a % Diária com base na banca EXATA do início daquele dia
             const bancaInicioDoDia = capitalCorrente - st.resultado;
             const pctDiaria = bancaInicioDoDia > 0 ? (st.resultado / bancaInicioDoDia) * 100 : 0;
             
@@ -300,36 +269,28 @@ async function carregarResumo() {
             tr.addEventListener('click', () => abrirDetalhesDia(dia, st.ops));
             if(tbody) tbody.appendChild(tr);
         });
-// ==========================================
+
         // --- CÁLCULO DAS ESTATÍSTICAS AVANÇADAS ---
-        // ==========================================
         let totalPayout = 0;
         let countPayout = 0;
         const statsAtivos = {};
-        const statsTurnos = {}; // Novo objeto para turnos
+        const statsTurnos = {}; 
 
         opsMesAtual.forEach(op => {
             if(op.payout) { totalPayout += op.payout; countPayout++; }
             const valorGanho = op.resultado === 'Win' ? (op.valor * (op.payout / 100)) : (op.resultado === 'Loss' ? -op.valor : 0);
 
-            // Calcula o Melhor Ativo
             if(!statsAtivos[op.ativo]) statsAtivos[op.ativo] = 0;
             statsAtivos[op.ativo] += valorGanho;
 
-            // Calcula o Melhor Turno (Madrugada, Manhã, Tarde ou Noite)
             const d = new Date(op.data_operacao);
-            const hora = d.getUTCHours(); // Usando a hora corrigida sem fuso
+            const hora = d.getUTCHours(); 
             let turno = '';
             
-            if(hora >= 6 && hora < 12) {
-                turno = 'Manhã';
-            } else if (hora >= 12 && hora < 18) {
-                turno = 'Tarde';
-            } else if (hora >= 18 && hora <= 23) {
-                turno = 'Noite';
-            } else {
-                turno = 'Madrugada';
-            }
+            if(hora >= 6 && hora < 12) turno = 'Manhã';
+            else if (hora >= 12 && hora < 18) turno = 'Tarde';
+            else if (hora >= 18 && hora <= 23) turno = 'Noite';
+            else turno = 'Madrugada';
 
             if(!statsTurnos[turno]) statsTurnos[turno] = 0;
             statsTurnos[turno] += valorGanho;
@@ -340,7 +301,6 @@ async function carregarResumo() {
         let currentWinStreak = 0, maxWinStreak = 0;
         let currentLossStreak = 0, maxLossStreak = 0;
 
-        // Calcula Streaks (Dias consecutivos de Win ou Loss)
         diasOrdenados.forEach(dia => {
             const st = statsPorDia[dia];
             diasOperados++;
@@ -357,7 +317,6 @@ async function carregarResumo() {
             }
         });
 
-        // Encontrar o Vencedor dos Ativos e Turnos
         let melhorAtivo = '---'; let maxLucroAtivo = -Infinity;
         for(let a in statsAtivos) { if(statsAtivos[a] > maxLucroAtivo) { maxLucroAtivo = statsAtivos[a]; melhorAtivo = a; } }
         if(maxLucroAtivo === -Infinity || maxLucroAtivo <= 0) melhorAtivo = '---';
@@ -366,11 +325,9 @@ async function carregarResumo() {
         for(let t in statsTurnos) { if(statsTurnos[t] > maxLucroTurno) { maxLucroTurno = statsTurnos[t]; melhorTurno = t; } }
         if(maxLucroTurno === -Infinity || maxLucroTurno <= 0) melhorTurno = '---';
 
-        // Médias
         const mediaDiaria = diasOperados > 0 ? somaLucroDiario / diasOperados : 0;
         const payoutMedio = countPayout > 0 ? totalPayout / countPayout : 0;
 
-        // --- INJETANDO NA TELA ---
         if(document.getElementById('adv-media-diaria')) {
             const elMedia = document.getElementById('adv-media-diaria');
             elMedia.textContent = `${mediaDiaria >= 0 ? '+' : ''}$${mediaDiaria.toFixed(2)}`;
@@ -379,11 +336,8 @@ async function carregarResumo() {
         if(document.getElementById('adv-payout-medio')) document.getElementById('adv-payout-medio').textContent = `${payoutMedio.toFixed(1)}%`;
         if(document.getElementById('adv-win-streak')) document.getElementById('adv-win-streak').textContent = maxWinStreak;
         if(document.getElementById('adv-loss-streak')) document.getElementById('adv-loss-streak').textContent = maxLossStreak;
-        
-        // Injeta o novo resultado de Turno
         if(document.getElementById('adv-melhor-turno')) document.getElementById('adv-melhor-turno').textContent = melhorTurno;
         if(document.getElementById('adv-melhor-ativo')) document.getElementById('adv-melhor-ativo').textContent = melhorAtivo;
-        // ==========================================
 
         atualizarProjecao();
         atualizarCalculadoraRisco();
@@ -401,10 +355,7 @@ function atualizarProjecao() {
     const metaInput = document.getElementById('meta-mensal');
     const metaPerc = metaInput ? parseFloat(metaInput.value) : 20;
     
-    // NOVA LÓGICA: Descobre o Capital Inicial do mês subtraindo o lucro atual da banca total
     const capitalInicialMes = currentCapitalTotal - currentLucroMes;
-    
-    // A meta agora é calculada em cima do capital do início do mês
     const metaEmDinheiro = capitalInicialMes * (metaPerc / 100);
     const faltaParaMeta = metaEmDinheiro - currentLucroMes;
     
@@ -445,7 +396,6 @@ function abrirDetalhesDia(dia, operacoesDoDia) {
     operacoesDoDia.sort((a,b) => new Date(a.data_operacao) - new Date(b.data_operacao)).forEach(op => {
         const d = new Date(op.data_operacao);
         
-        // CORREÇÃO: Formatando hora e minuto puxando direto de UTC
         const horaStr = d.getUTCHours().toString().padStart(2, '0');
         const minStr = d.getUTCMinutes().toString().padStart(2, '0');
         const hora = `${horaStr}:${minStr}`;
@@ -474,26 +424,24 @@ function abrirDetalhesDia(dia, operacoesDoDia) {
         tbody.appendChild(tr);
     });
 
-    modalDetalhes.style.display = 'flex';
+    document.getElementById('modal-detalhes').style.display = 'flex';
 }
 
 // ==========================================
-// GRÁFICO DE EVOLUÇÃO (AGRUPADO POR DIA)
+// 5. GRÁFICO DE EVOLUÇÃO (AGRUPADO POR DIA)
 // ==========================================
 function renderizarGrafico(operacoes) {
     const canvas = document.getElementById('graficoEvolucao');
     if(!canvas) return;
     
-    // Se já existe um gráfico, destrua-o antes de desenhar o novo
     if(window.meuGrafico) window.meuGrafico.destroy();
 
     const ctx = canvas.getContext('2d');
     
-    // 1. Agrupar o lucro total de cada dia
     const lucroPorDia = {};
     operacoes.forEach(op => {
         const d = new Date(op.data_operacao);
-        const dia = d.getUTCDate(); // Puxa o dia exato (UTC)
+        const dia = d.getUTCDate(); 
         
         const valorGanho = op.resultado === 'Win' ? (op.valor * (op.payout / 100)) : (op.resultado === 'Loss' ? -op.valor : 0);
         
@@ -501,21 +449,18 @@ function renderizarGrafico(operacoes) {
         lucroPorDia[dia] += valorGanho;
     });
 
-    // 2. Ordenar os dias de forma cronológica (Dia 1, 2, 3...)
     const diasOrdenados = Object.keys(lucroPorDia).map(Number).sort((a,b) => a - b);
     
     let acumulado = 0;
     const labels = [];
     const dados = [];
 
-    // 3. Somar o lucro como uma "bola de neve" dia a dia
     diasOrdenados.forEach(dia => {
         acumulado += lucroPorDia[dia];
-        labels.push(dia); // Aqui o eixo X vai mostrar apenas o número do dia
+        labels.push(dia); 
         dados.push(acumulado);
     });
 
-    // 4. Desenhar o Gráfico
     window.meuGrafico = new Chart(ctx, {
         type: 'line',
         data: {
@@ -523,10 +468,10 @@ function renderizarGrafico(operacoes) {
             datasets: [{
                 label: 'Evolução de Lucro ($)',
                 data: dados,
-                borderColor: '#00ffa3', // Verde Neon
+                borderColor: '#00ffa3', 
                 backgroundColor: 'rgba(0, 255, 163, 0.1)',
                 fill: true,
-                tension: 0.4, // Deixa a linha suave/curvada
+                tension: 0.4, 
                 pointBackgroundColor: '#0c1114',
                 pointBorderColor: '#00ffa3',
                 pointBorderWidth: 2,
@@ -538,20 +483,13 @@ function renderizarGrafico(operacoes) {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: { 
-                    grid: { color: 'rgba(255, 255, 255, 0.05)' }, 
-                    ticks: { color: '#888' } 
-                },
-                x: { 
-                    grid: { display: false }, 
-                    ticks: { color: '#888' } 
-                }
+                y: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#888' } },
+                x: { grid: { display: false }, ticks: { color: '#888' } }
             },
             plugins: { 
                 legend: { display: false },
                 tooltip: {
                     callbacks: {
-                        // Coloca um "Dia" e "$" no balão flutuante ao passar o mouse
                         title: (context) => `Dia ${context[0].label}`,
                         label: (context) => {
                             let valor = context.raw;
@@ -565,7 +503,7 @@ function renderizarGrafico(operacoes) {
 }
 
 // ==========================================
-// 5. FUNÇÕES DE DELETAR (OPERAÇÃO E BANCA)
+// 6. FUNÇÕES DE DELETAR (OPERAÇÃO E BANCA)
 // ==========================================
 window.deletarOperacao = async function(id) {
     const confirmacao = confirm("Tem certeza que deseja excluir esta operação?");
@@ -597,7 +535,7 @@ window.deletarTransacao = async function(id) {
 };
 
 // ==========================================
-// 6. HISTÓRICO COMPLETO DA BANCA (AJUSTE DE FUSO UTC)
+// 7. HISTÓRICO COMPLETO DA BANCA
 // ==========================================
 async function abrirHistoricoBanca() {
     try {
@@ -617,7 +555,6 @@ async function abrirHistoricoBanca() {
         transacoes.forEach(t => {
             const d = new Date(t.data_transacao);
             
-            // CORREÇÃO: Forçando formatação da Data/Hora direto no UTC para não perder 3h
             const diaStr = d.getUTCDate().toString().padStart(2, '0');
             const mesStr = (d.getUTCMonth() + 1).toString().padStart(2, '0');
             const anoStr = d.getUTCFullYear();
@@ -648,27 +585,26 @@ async function abrirHistoricoBanca() {
     }
 }
 
-// Iniciar Sistema
-carregarResumo();
-
 // ==========================================
-// 7. CALCULADORA DE RISCO (NOVA)
+// 8. CALCULADORA DE RISCO
 // ==========================================
 function atualizarCalculadoraRisco() {
     const percRisco = parseFloat(document.getElementById('calc-risco').value) || 0;
     const percPayout = parseFloat(document.getElementById('calc-payout').value) || 0;
     
-    // A mágica: Calcula o valor da entrada sobre o seu Capital Atual!
+    // Calcula sobre o capital atual da corretora em vez do total
     const valorEntrada = currentCapitalTotal * (percRisco / 100);
     const lucroEstimado = valorEntrada * (percPayout / 100);
     
-    document.getElementById('calc-valor-entrada').textContent = `$${valorEntrada.toFixed(2)}`;
-    document.getElementById('calc-lucro-estimado').textContent = `Retorno: +$${lucroEstimado.toFixed(2)}`;
+    if(document.getElementById('calc-valor-entrada')) document.getElementById('calc-valor-entrada').textContent = `$${valorEntrada.toFixed(2)}`;
+    if(document.getElementById('calc-lucro-estimado')) document.getElementById('calc-lucro-estimado').textContent = `Retorno: +$${lucroEstimado.toFixed(2)}`;
 }
 
-// Ouve as digitações nos inputs e calcula em tempo real
 const inputRisco = document.getElementById('calc-risco');
 const inputPayout = document.getElementById('calc-payout');
 
 if(inputRisco) inputRisco.addEventListener('input', atualizarCalculadoraRisco);
 if(inputPayout) inputPayout.addEventListener('input', atualizarCalculadoraRisco);
+
+// Iniciar Sistema
+carregarResumo();
